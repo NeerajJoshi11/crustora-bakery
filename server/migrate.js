@@ -27,13 +27,24 @@ export async function runMigrations() {
                 description TEXT,
                 price NUMERIC(10, 2) NOT NULL DEFAULT 0,
                 img TEXT,
+                images JSONB DEFAULT '[]',
                 badge VARCHAR(100),
                 is_available BOOLEAN DEFAULT true,
                 created_at TIMESTAMPTZ DEFAULT NOW(),
                 updated_at TIMESTAMPTZ DEFAULT NOW()
             );
         `);
-        console.log('✅ Table "menu_items" verified/created.');
+        // Ensure 'images' column exists if table was created previously
+        await query(`
+            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]';
+        `);
+        // Backfill existing rows with images array containing their current img
+        await query(`
+            UPDATE menu_items
+            SET images = json_build_array(img)
+            WHERE (images IS NULL OR images = '[]'::jsonb) AND img IS NOT NULL;
+        `);
+        console.log('✅ Table "menu_items" verified/created (with multi-image support).');
 
         // 2. Users Table
         await query(`
@@ -94,9 +105,12 @@ export async function runMigrations() {
         if (parseInt(countRes.rows[0].count, 10) === 0) {
             console.log('🌱 Seeding default menu items into Supabase...');
             for (const item of DEFAULT_MENU_ITEMS) {
+                const itemImgs = Array.isArray(item.images) && item.images.length > 0
+                    ? item.images
+                    : (item.img ? [item.img] : ['assets/images/bento_cake.png']);
                 await query(`
-                    INSERT INTO menu_items (id, name, category, description, price, img, badge, is_available, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    INSERT INTO menu_items (id, name, category, description, price, img, images, badge, is_available, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                     ON CONFLICT (id) DO NOTHING;
                 `, [
                     item.id,
@@ -104,7 +118,8 @@ export async function runMigrations() {
                     item.category,
                     item.desc,
                     item.price,
-                    item.img,
+                    itemImgs[0] || item.img || 'assets/images/bento_cake.png',
+                    JSON.stringify(itemImgs),
                     item.badge || null,
                     item.isAvailable !== false,
                     item.createdAt || new Date()
@@ -113,6 +128,17 @@ export async function runMigrations() {
             console.log(`✅ Seeded ${DEFAULT_MENU_ITEMS.length} bakery items.`);
         } else {
             console.log(`ℹ️ "menu_items" table already contains ${countRes.rows[0].count} items.`);
+            // Update multi-images for default showcase items
+            for (const item of DEFAULT_MENU_ITEMS) {
+                if (item.images && item.images.length > 1) {
+                    await query(`
+                        UPDATE menu_items
+                        SET images = $1
+                        WHERE id = $2 AND (images IS NULL OR jsonb_array_length(images) <= 1);
+                    `, [JSON.stringify(item.images), item.id]);
+                }
+            }
+            console.log('✅ Synchronized multi-image collections for default bakery treats.');
         }
 
         // Seed Users if empty

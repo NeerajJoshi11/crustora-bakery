@@ -38,40 +38,103 @@ cartBtn.addEventListener('click', openCart);
 closeCartBtn.addEventListener('click', closeCart);
 cartOverlay.addEventListener('click', closeCart);
 
-// Add to Cart from Grid (Event Delegation for dynamic elements)
+// Grid Click Interactions (Card Carousel Navigation, Quick View Modal, and Add to Cart)
 productGrid.addEventListener('click', (e) => {
-    const btn = e.target.closest('.add-to-cart');
-    if (!btn || btn.disabled) return;
+    // 1. On-Card Image Previous / Next Arrow
+    const navBtn = e.target.closest('.card-img-nav');
+    if (navBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = navBtn.closest('.product-card');
+        const imgWrapper = card.querySelector('.card-img-wrapper');
+        const imgEl = card.querySelector('.product-img');
+        const dots = card.querySelectorAll('.card-img-dot');
+        const imgs = JSON.parse(card.dataset.images || '[]');
+        if (imgs.length <= 1) return;
 
-    const card = btn.closest('.product-card');
-    const itemName = card.querySelector('h3').textContent;
-    const itemPrice = Number(btn.getAttribute('data-price')) || 0;
+        let currentIdx = Number(imgWrapper.getAttribute('data-active-idx') || 0);
+        const dir = Number(navBtn.getAttribute('data-dir') || 1);
+        currentIdx = (currentIdx + dir + imgs.length) % imgs.length;
 
-    const existingItem = cart.find(item => item.name === itemName);
-    if (existingItem) {
-        existingItem.qty++;
-        if (!existingItem.price && itemPrice) existingItem.price = itemPrice;
-    } else {
-        cart.push({ name: itemName, price: itemPrice, qty: 1 });
+        imgWrapper.setAttribute('data-active-idx', currentIdx);
+        imgEl.style.opacity = '0.35';
+        setTimeout(() => {
+            imgEl.src = imgs[currentIdx];
+            imgEl.style.opacity = '1';
+        }, 110);
+
+        dots.forEach((dot, idx) => dot.classList.toggle('active', idx === currentIdx));
+        return;
     }
 
-    updateCartCount();
+    // 2. On-Card Image Indicator Dot Click
+    const dot = e.target.closest('.card-img-dot');
+    if (dot) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = dot.closest('.product-card');
+        const imgWrapper = card.querySelector('.card-img-wrapper');
+        const imgEl = card.querySelector('.product-img');
+        const dots = card.querySelectorAll('.card-img-dot');
+        const imgs = JSON.parse(card.dataset.images || '[]');
+        const targetIdx = Number(dot.getAttribute('data-idx') || 0);
 
-    // Trigger sweet confetti burst from button
-    const btnRect = btn.getBoundingClientRect();
-    triggerSweetBurst(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
+        imgWrapper.setAttribute('data-active-idx', targetIdx);
+        imgEl.style.opacity = '0.35';
+        setTimeout(() => {
+            imgEl.src = imgs[targetIdx];
+            imgEl.style.opacity = '1';
+        }, 110);
 
-    // Tactile animation effect on clicking
-    const ogContent = btn.innerHTML;
-    btn.innerHTML = '<span>✓</span><span>Added</span>';
-    btn.classList.add('added');
+        dots.forEach((d, idx) => d.classList.toggle('active', idx === targetIdx));
+        return;
+    }
 
-    setTimeout(() => {
-        btn.innerHTML = ogContent;
-        btn.classList.remove('added');
-    }, 1100);
+    // 3. Add to Cart Button Click
+    const btn = e.target.closest('.add-to-cart');
+    if (btn) {
+        if (btn.disabled) return;
+        const card = btn.closest('.product-card');
+        const itemName = card.querySelector('h3').textContent;
+        const itemPrice = Number(btn.getAttribute('data-price')) || 0;
 
-    showToast(`🌸 ${itemName} added to your cart!`, 'success');
+        const existingItem = cart.find(item => item.name === itemName);
+        if (existingItem) {
+            existingItem.qty++;
+            if (!existingItem.price && itemPrice) existingItem.price = itemPrice;
+        } else {
+            cart.push({ name: itemName, price: itemPrice, qty: 1 });
+        }
+
+        updateCartCount();
+
+        // Trigger sweet confetti burst from button
+        const btnRect = btn.getBoundingClientRect();
+        triggerSweetBurst(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
+
+        // Tactile animation effect on clicking
+        const ogContent = btn.innerHTML;
+        btn.innerHTML = '<span>✓</span><span>Added</span>';
+        btn.classList.add('added');
+
+        setTimeout(() => {
+            btn.innerHTML = ogContent;
+            btn.classList.remove('added');
+        }, 1100);
+
+        showToast(`🌸 ${itemName} added to your cart!`, 'success');
+        return;
+    }
+
+    // 4. Click on Card Image Wrapper or Title -> Opens Full Quick View & Gallery Modal!
+    const trigger = e.target.closest('.card-img-wrapper') || e.target.closest('h3');
+    if (trigger) {
+        const card = trigger.closest('.product-card');
+        if (!card) return;
+        const itemId = card.getAttribute('data-id');
+        const currentActiveIdx = Number(card.querySelector('.card-img-wrapper')?.getAttribute('data-active-idx') || 0);
+        openProductQuickView(itemId, currentActiveIdx);
+    }
 });
 
 // Helper to safely escape HTML
@@ -391,13 +454,35 @@ function renderCategory(items, categoryTitle = '') {
 
     items.forEach((item, i) => {
         const isAvailable = item.isAvailable !== false;
+        const imgs = Array.isArray(item.images) && item.images.length > 0
+            ? item.images
+            : (item.img ? [item.img] : ['assets/images/bento_cake.png']);
+        const hasMultiple = imgs.length > 1;
+
         const div = document.createElement('div');
         div.className = 'product-card fade-in-up';
         div.style.animationDelay = `${(i % 8) * 0.06}s`;
+        div.setAttribute('data-id', item.id);
+        div.dataset.images = JSON.stringify(imgs);
 
         const badgeHtml = !isAvailable
             ? '<span class="card-badge sold-out">Sold Out</span>'
             : (item.badge ? `<span class="card-badge">${escapeHtml(item.badge)}</span>` : '');
+
+        const photosBadgeHtml = hasMultiple
+            ? `<span class="card-photos-badge" title="${imgs.length} photos available"><span class="badge-cam">📷</span> ${imgs.length}</span>`
+            : '';
+
+        const navButtonsHtml = hasMultiple
+            ? `<button type="button" class="card-img-nav prev" data-dir="-1" aria-label="Previous photo">‹</button>
+               <button type="button" class="card-img-nav next" data-dir="1" aria-label="Next photo">›</button>`
+            : '';
+
+        const dotsHtml = hasMultiple
+            ? `<div class="card-img-dots">
+                 ${imgs.map((_, idx) => `<span class="card-img-dot ${idx === 0 ? 'active' : ''}" data-idx="${idx}"></span>`).join('')}
+               </div>`
+            : '';
 
         const priceText = item.price ? `₹${item.price}` : 'Pre-order';
         const buttonHtml = isAvailable
@@ -407,15 +492,18 @@ function renderCategory(items, categoryTitle = '') {
             : `<button class="btn icon-btn sold-out-btn" disabled title="Currently sold out">Sold Out</button>`;
 
         div.innerHTML = `
-            <div class="card-img-wrapper">
+            <div class="card-img-wrapper" data-active-idx="0" title="Click to view full photo gallery">
                 ${badgeHtml}
-                <img src="${item.img || 'assets/images/bento_cake.png'}" alt="${escapeHtml(item.name)}" class="product-img" loading="lazy" onerror="this.src='assets/images/bento_cake.png'">
+                ${photosBadgeHtml}
+                <img src="${imgs[0]}" alt="${escapeHtml(item.name)}" class="product-img" loading="lazy" onerror="this.src='assets/images/bento_cake.png'">
+                ${navButtonsHtml}
+                ${dotsHtml}
             </div>
             <div class="card-meta-row">
                 <span class="card-category-tag">${escapeHtml(item.category || 'Bakery')}</span>
                 <span class="card-dietary-tag">🌿 Eggless</span>
             </div>
-            <h3>${escapeHtml(item.name)}</h3>
+            <h3 title="Click to view full details" style="cursor: pointer;">${escapeHtml(item.name)}</h3>
             <p>${escapeHtml(item.desc || '')}</p>
             <div class="price-row">
                 <span class="price">${priceText}</span>
@@ -850,3 +938,213 @@ if (newsletterForm) {
         newsletterForm.reset();
     });
 }
+
+// =========================================================
+// Interactive Product Quick View & Multi-Image Gallery Modal
+// =========================================================
+const quickViewModal = document.getElementById('productQuickViewModal');
+const closeQuickViewBtn = document.getElementById('closeQuickViewBtn');
+const quickViewBackdrop = document.getElementById('quickViewBackdrop');
+const qvMainImg = document.getElementById('qvMainImg');
+const qvPrevBtn = document.getElementById('qvPrevBtn');
+const qvNextBtn = document.getElementById('qvNextBtn');
+const qvPhotoCounter = document.getElementById('qvPhotoCounter');
+const qvThumbsStrip = document.getElementById('qvThumbsStrip');
+const qvCategory = document.getElementById('qvCategory');
+const qvBadge = document.getElementById('qvBadge');
+const qvTitle = document.getElementById('qvTitle');
+const qvPrice = document.getElementById('qvPrice');
+const qvStockStatus = document.getElementById('qvStockStatus');
+const qvDesc = document.getElementById('qvDesc');
+const qvQtyMinus = document.getElementById('qvQtyMinus');
+const qvQtyPlus = document.getElementById('qvQtyPlus');
+const qvQtyValue = document.getElementById('qvQtyValue');
+const qvAddToCartBtn = document.getElementById('qvAddToCartBtn');
+const qvWaDirectBtn = document.getElementById('qvWaDirectBtn');
+
+let qvCurrentItem = null;
+let qvCurrentPhotoIdx = 0;
+let qvQty = 1;
+
+async function openProductQuickView(itemId, startPhotoIdx = 0) {
+    if (!quickViewModal) return;
+    const item = allMenuItemsCache.find(i => i.id === itemId) || await db.getMenuItem(itemId);
+    if (!item) return;
+
+    qvCurrentItem = item;
+    qvCurrentPhotoIdx = startPhotoIdx;
+    qvQty = 1;
+    if (qvQtyValue) qvQtyValue.textContent = '1';
+
+    const imgs = Array.isArray(item.images) && item.images.length > 0
+        ? item.images
+        : (item.img ? [item.img] : ['assets/images/bento_cake.png']);
+
+    // Set textual metadata
+    if (qvTitle) qvTitle.textContent = item.name;
+    if (qvCategory) qvCategory.textContent = item.category || 'Bakery';
+    if (qvPrice) qvPrice.textContent = item.price ? `₹${item.price}` : 'Pre-order';
+    if (qvDesc) qvDesc.textContent = item.desc || 'Handcrafted fresh with the finest ingredients.';
+
+    if (qvBadge) {
+        if (item.badge) {
+            qvBadge.textContent = item.badge;
+            qvBadge.style.display = 'inline-block';
+        } else {
+            qvBadge.style.display = 'none';
+        }
+    }
+
+    if (qvStockStatus) {
+        const inStock = item.isAvailable !== false;
+        qvStockStatus.textContent = inStock ? '● Fresh & In Stock' : '✕ Currently Sold Out';
+        qvStockStatus.style.color = inStock ? '#16a34a' : '#ef4444';
+        if (qvAddToCartBtn) qvAddToCartBtn.disabled = !inStock;
+    }
+
+    // Set Thumbnails strip
+    if (qvThumbsStrip) {
+        if (imgs.length > 1) {
+            qvThumbsStrip.style.display = 'flex';
+            qvThumbsStrip.innerHTML = imgs.map((src, idx) => `
+                <div class="qv-thumb-item ${idx === qvCurrentPhotoIdx ? 'active' : ''}" data-idx="${idx}" title="Photo ${idx + 1}">
+                    <img src="${escapeHtml(src)}" alt="Thumbnail ${idx + 1}" onerror="this.src='assets/images/bento_cake.png'">
+                </div>
+            `).join('');
+        } else {
+            qvThumbsStrip.style.display = 'none';
+            qvThumbsStrip.innerHTML = '';
+        }
+    }
+
+    // Navigation buttons visibility
+    if (qvPrevBtn) qvPrevBtn.style.display = imgs.length > 1 ? 'flex' : 'none';
+    if (qvNextBtn) qvNextBtn.style.display = imgs.length > 1 ? 'flex' : 'none';
+
+    updateQuickViewPhoto(qvCurrentPhotoIdx);
+
+    quickViewModal.classList.add('open');
+    quickViewModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+}
+
+function updateQuickViewPhoto(idx) {
+    if (!qvCurrentItem) return;
+    const imgs = Array.isArray(qvCurrentItem.images) && qvCurrentItem.images.length > 0
+        ? qvCurrentItem.images
+        : (qvCurrentItem.img ? [qvCurrentItem.img] : ['assets/images/bento_cake.png']);
+
+    qvCurrentPhotoIdx = (idx + imgs.length) % imgs.length;
+
+    if (qvMainImg) {
+        qvMainImg.style.opacity = '0.35';
+        setTimeout(() => {
+            qvMainImg.src = imgs[qvCurrentPhotoIdx];
+            qvMainImg.style.opacity = '1';
+        }, 110);
+    }
+
+    if (qvPhotoCounter) {
+        qvPhotoCounter.textContent = `${qvCurrentPhotoIdx + 1} / ${imgs.length}`;
+        qvPhotoCounter.style.display = imgs.length > 1 ? 'inline-block' : 'none';
+    }
+
+    if (qvThumbsStrip) {
+        const thumbEls = qvThumbsStrip.querySelectorAll('.qv-thumb-item');
+        thumbEls.forEach((el, i) => {
+            el.classList.toggle('active', i === qvCurrentPhotoIdx);
+            if (i === qvCurrentPhotoIdx) {
+                el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        });
+    }
+}
+
+function closeProductQuickView() {
+    if (!quickViewModal) return;
+    quickViewModal.classList.remove('open');
+    quickViewModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+}
+
+if (closeQuickViewBtn) closeQuickViewBtn.addEventListener('click', closeProductQuickView);
+if (quickViewBackdrop) quickViewBackdrop.addEventListener('click', closeProductQuickView);
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && quickViewModal && quickViewModal.classList.contains('open')) {
+        closeProductQuickView();
+    }
+});
+
+if (qvPrevBtn) {
+    qvPrevBtn.addEventListener('click', () => updateQuickViewPhoto(qvCurrentPhotoIdx - 1));
+}
+
+if (qvNextBtn) {
+    qvNextBtn.addEventListener('click', () => updateQuickViewPhoto(qvCurrentPhotoIdx + 1));
+}
+
+if (qvThumbsStrip) {
+    qvThumbsStrip.addEventListener('click', (e) => {
+        const thumb = e.target.closest('.qv-thumb-item');
+        if (thumb) {
+            const idx = Number(thumb.getAttribute('data-idx') || 0);
+            updateQuickViewPhoto(idx);
+        }
+    });
+}
+
+if (qvQtyMinus) {
+    qvQtyMinus.addEventListener('click', () => {
+        if (qvQty > 1) {
+            qvQty--;
+            if (qvQtyValue) qvQtyValue.textContent = qvQty;
+        }
+    });
+}
+
+if (qvQtyPlus) {
+    qvQtyPlus.addEventListener('click', () => {
+        if (qvQty < 99) {
+            qvQty++;
+            if (qvQtyValue) qvQtyValue.textContent = qvQty;
+        }
+    });
+}
+
+if (qvAddToCartBtn) {
+    qvAddToCartBtn.addEventListener('click', () => {
+        if (!qvCurrentItem) return;
+        const itemName = qvCurrentItem.name;
+        const itemPrice = Number(qvCurrentItem.price) || 0;
+
+        const existingItem = cart.find(item => item.name === itemName);
+        if (existingItem) {
+            existingItem.qty += qvQty;
+            if (!existingItem.price && itemPrice) existingItem.price = itemPrice;
+        } else {
+            cart.push({ name: itemName, price: itemPrice, qty: qvQty });
+        }
+
+        updateCartCount();
+
+        const btnRect = qvAddToCartBtn.getBoundingClientRect();
+        triggerSweetBurst(btnRect.left + btnRect.width / 2, btnRect.top + btnRect.height / 2);
+
+        showToast(`🌸 Added ${qvQty}x "${itemName}" to your cart!`, 'success');
+        closeProductQuickView();
+    });
+}
+
+if (qvWaDirectBtn) {
+    qvWaDirectBtn.addEventListener('click', () => {
+        if (!qvCurrentItem) return;
+        const itemName = qvCurrentItem.name;
+        const itemPrice = qvCurrentItem.price ? ` (₹${qvCurrentItem.price * qvQty})` : '';
+        const msg = `Hi Crustora! 🌸 I would like to order:\n- ${qvQty}x ${itemName}${itemPrice}\n\nPlease confirm availability and details! ✨`;
+        const phone = "919891775379";
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    });
+}
+

@@ -29,6 +29,12 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "A cute, personal-size chocolate bento cake with silky frosting and celebratory candle.",
         price: 349,
         img: "assets/images/iconic_bento_candle.jpg",
+        images: [
+            "assets/images/iconic_bento_candle.jpg",
+            "assets/images/custom_bento_cake.jpg",
+            "assets/images/sana_gappu_sher.jpg",
+            "assets/images/bento_cake.png"
+        ],
         badge: "Bestseller",
         isAvailable: true,
         createdAt: "2026-01-10T10:00:00.000Z"
@@ -40,6 +46,11 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Wholesome, 100% maida-free bento cake baked with organic whole wheat.",
         price: 399,
         img: "assets/images/atta_bento.png",
+        images: [
+            "assets/images/atta_bento.png",
+            "assets/images/iconic_bento_candle.jpg",
+            "assets/images/bento_cake.png"
+        ],
         badge: "Healthy Choice",
         isAvailable: true,
         createdAt: "2026-01-11T11:00:00.000Z"
@@ -51,6 +62,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Decadent truffle cake with silky dark chocolate ganache layers.",
         price: 649,
         img: "assets/images/truffle_cake.png",
+        images: [
+            "assets/images/truffle_cake.png",
+            "assets/images/chocolate_tub_cake_1775410734736.png"
+        ],
         badge: "Rich & Moist",
         isAvailable: true,
         createdAt: "2026-01-12T12:00:00.000Z"
@@ -62,6 +77,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Classic vanilla sponge infused with fresh cream, perfect for celebrations.",
         price: 599,
         img: "assets/images/bento_cake.png",
+        images: [
+            "assets/images/bento_cake.png",
+            "assets/images/custom_message_bento.jpg"
+        ],
         badge: "Classic",
         isAvailable: true,
         createdAt: "2026-01-13T13:00:00.000Z"
@@ -73,6 +92,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Rich butterscotch flavor with crunchy caramel pralines in every bite.",
         price: 629,
         img: "assets/images/truffle_cake.png",
+        images: [
+            "assets/images/truffle_cake.png",
+            "assets/images/bento_cake.png"
+        ],
         badge: "Crunchy",
         isAvailable: true,
         createdAt: "2026-01-14T14:00:00.000Z"
@@ -84,6 +107,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Fluffy, creamy cupcakes with colorful pastel toppings.",
         price: 199,
         img: "assets/images/pink_cupcakes.png",
+        images: [
+            "assets/images/pink_cupcakes.png",
+            "assets/images/gift_hamper_1775410716144.png"
+        ],
         badge: "Kids Favorite",
         isAvailable: true,
         createdAt: "2026-01-15T15:00:00.000Z"
@@ -95,6 +122,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Classic red velvet with velvety cream cheese frosting rosette.",
         price: 249,
         img: "assets/images/pink_cupcakes.png",
+        images: [
+            "assets/images/pink_cupcakes.png"
+        ],
         badge: "Signature",
         isAvailable: true,
         createdAt: "2026-01-16T16:00:00.000Z"
@@ -106,6 +136,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Moist double chocolate muffins loaded with melty choco chips.",
         price: 189,
         img: "assets/images/pink_cupcakes.png",
+        images: [
+            "assets/images/pink_cupcakes.png"
+        ],
         badge: "Choco Rich",
         isAvailable: true,
         createdAt: "2026-01-17T17:00:00.000Z"
@@ -117,6 +150,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Layered chocolate mud cake, fudge and chocolate crisps in a tub.",
         price: 289,
         img: "assets/images/chocolate_tub_cake_1775410734736.png",
+        images: [
+            "assets/images/chocolate_tub_cake_1775410734736.png",
+            "assets/images/truffle_cake.png"
+        ],
         badge: "Must Try",
         isAvailable: true,
         createdAt: "2026-01-18T18:00:00.000Z"
@@ -128,6 +165,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Fresh seasonal strawberries layered with light vanilla cream and sponge.",
         price: 299,
         img: "assets/images/strawberry_jar_cake_1775410667006.png",
+        images: [
+            "assets/images/strawberry_jar_cake_1775410667006.png"
+        ],
         badge: "Seasonal",
         isAvailable: true,
         createdAt: "2026-01-19T19:00:00.000Z"
@@ -139,6 +179,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Gourmet layers of red velvet cake and cream cheese in a glass jar.",
         price: 279,
         img: "assets/images/strawberry_jar_cake_1775410667006.png",
+        images: [
+            "assets/images/strawberry_jar_cake_1775410667006.png"
+        ],
         badge: "Giftable",
         isAvailable: true,
         createdAt: "2026-01-20T20:00:00.000Z"
@@ -150,6 +193,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "The dream combination of fresh strawberries dipped in rich Belgian chocolate.",
         price: 329,
         img: "assets/images/strawberry_jar_cake_1775410667006.png",
+        images: [
+            "assets/images/strawberry_jar_cake_1775410667006.png"
+        ],
         badge: "Chef Special",
         isAvailable: true,
         createdAt: "2026-01-21T21:00:00.000Z"
@@ -161,6 +207,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Fudgy brownies paired with fresh strawberry chunks and chocolate drizzle.",
         price: 399,
         img: "assets/images/gift_hamper_1775410716144.png",
+        images: [
+            "assets/images/gift_hamper_1775410716144.png",
+            "assets/images/fudge_brownies.jpg"
+        ],
         badge: "Trending",
         isAvailable: true,
         createdAt: "2026-01-22T22:00:00.000Z"
@@ -172,6 +222,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Rich fudgy chocolate brownie loaded with toasted crunchy almonds.",
         price: 199,
         img: "assets/images/almond_brownies.png",
+        images: [
+            "assets/images/almond_brownies.png",
+            "assets/images/fudge_brownies.jpg"
+        ],
         badge: "Bestseller",
         isAvailable: true,
         createdAt: "2026-01-23T10:00:00.000Z"
@@ -182,7 +236,12 @@ export const DEFAULT_MENU_ITEMS = [
         category: "Brownies",
         desc: "Classic dense and deeply chocolatey fudge brownie with a crackly top.",
         price: 179,
-        img: "assets/images/almond_brownies.png",
+        img: "assets/images/fudge_brownies.jpg",
+        images: [
+            "assets/images/fudge_brownies.jpg",
+            "assets/images/almond_brownies.png",
+            "assets/images/sana_gappu_sher.jpg"
+        ],
         badge: "Pure Delight",
         isAvailable: true,
         createdAt: "2026-01-24T11:00:00.000Z"
@@ -194,6 +253,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "A gift box of four customized walnut brownies baked fresh.",
         price: 499,
         img: "assets/images/almond_brownies.png",
+        images: [
+            "assets/images/almond_brownies.png",
+            "assets/images/fudge_brownies.jpg"
+        ],
         badge: "Gift Box",
         isAvailable: true,
         createdAt: "2026-01-25T12:00:00.000Z"
@@ -205,6 +268,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Soft, fragrant tea cake topped with sliced almonds. Perfect with chai.",
         price: 349,
         img: "assets/images/tea_cake.png",
+        images: [
+            "assets/images/tea_cake.png"
+        ],
         badge: "Tea Time",
         isAvailable: true,
         createdAt: "2026-01-26T13:00:00.000Z"
@@ -216,6 +282,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Melt-in-mouth chocolate loaf cake, lightly sweetened for everyday cravings.",
         price: 349,
         img: "assets/images/tea_cake.png",
+        images: [
+            "assets/images/tea_cake.png"
+        ],
         badge: "Comfort",
         isAvailable: true,
         createdAt: "2026-01-27T14:00:00.000Z"
@@ -227,6 +296,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Beautifully swirled vanilla and dark chocolate sponge loaf.",
         price: 369,
         img: "assets/images/tea_cake.png",
+        images: [
+            "assets/images/tea_cake.png"
+        ],
         badge: "Artisanal",
         isAvailable: true,
         createdAt: "2026-01-28T15:00:00.000Z"
@@ -238,6 +310,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Handcrafted premium filled chocolates featuring hazelnut, caramel, and berry.",
         price: 449,
         img: "assets/images/assorted_chocolates_1775410684129.png",
+        images: [
+            "assets/images/assorted_chocolates_1775410684129.png"
+        ],
         badge: "Handmade",
         isAvailable: true,
         createdAt: "2026-01-29T16:00:00.000Z"
@@ -249,6 +324,10 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Personalized artisanal chocolate box with custom message for your loved ones.",
         price: 599,
         img: "assets/images/assorted_chocolates_1775410684129.png",
+        images: [
+            "assets/images/assorted_chocolates_1775410684129.png",
+            "assets/images/sana_gappu_sher.jpg"
+        ],
         badge: "Customizable",
         isAvailable: true,
         createdAt: "2026-01-30T17:00:00.000Z"
@@ -260,6 +339,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Aesthetic pastel pink scented soy wax candle in an elegant reusable glass jar.",
         price: 249,
         img: "assets/images/scented_candles_1775410699647.png",
+        images: [
+            "assets/images/scented_candles_1775410699647.png"
+        ],
         badge: "Aroma",
         isAvailable: true,
         createdAt: "2026-01-31T18:00:00.000Z"
@@ -271,6 +353,9 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Artisanal shaped candles that infuse warmth and elegance to your sweet space.",
         price: 299,
         img: "assets/images/scented_candles_1775410699647.png",
+        images: [
+            "assets/images/scented_candles_1775410699647.png"
+        ],
         badge: "Decor",
         isAvailable: true,
         createdAt: "2026-02-01T19:00:00.000Z"
@@ -282,6 +367,11 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Our royal hamper containing a Bento Cake, 4 Brownies, Chocolates, and a Candle.",
         price: 1199,
         img: "assets/images/gift_hamper_1775410716144.png",
+        images: [
+            "assets/images/gift_hamper_1775410716144.png",
+            "assets/images/assorted_chocolates_1775410684129.png",
+            "assets/images/scented_candles_1775410699647.png"
+        ],
         badge: "Celebration",
         isAvailable: true,
         createdAt: "2026-02-02T20:00:00.000Z"
@@ -293,6 +383,11 @@ export const DEFAULT_MENU_ITEMS = [
         desc: "Sweet gift set with Chocolate Bento Cake and a pastel scented candle.",
         price: 549,
         img: "assets/images/gift_hamper_1775410716144.png",
+        images: [
+            "assets/images/gift_hamper_1775410716144.png",
+            "assets/images/iconic_bento_candle.jpg",
+            "assets/images/scented_candles_1775410699647.png"
+        ],
         badge: "Best Gifting",
         isAvailable: true,
         createdAt: "2026-02-03T21:00:00.000Z"
@@ -643,36 +738,59 @@ class CrustoraDB {
         return res;
     }
 
+    // Helper to ensure images array and cover img are in sync
+    _normalizeItem(item) {
+        if (!item) return item;
+        let images = [];
+        if (Array.isArray(item.images)) {
+            images = item.images.filter(Boolean);
+        } else if (typeof item.images === 'string') {
+            try { images = JSON.parse(item.images); } catch (e) { images = []; }
+        }
+        if (!Array.isArray(images) || images.length === 0) {
+            images = item.img ? [item.img] : ['assets/images/bento_cake.png'];
+        }
+        return {
+            ...item,
+            images,
+            img: images[0] || item.img || 'assets/images/bento_cake.png'
+        };
+    }
+
     // --- MENU ITEMS CRUD (Supabase PostgreSQL + Local Cache) ---
     async getMenuItems() {
         try {
             const res = await fetch('/api/menu');
             if (res.ok) {
                 const items = await res.json();
-                for (const item of items) await this.put('menu_items', item);
-                return items.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                const normalized = items.map(i => this._normalizeItem(i));
+                for (const item of normalized) await this.put('menu_items', item);
+                return normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
             }
         } catch (e) {
             console.warn('API error, using cached menu items:', e);
         }
-        const items = await this.getAll('menu_items');
+        const rawItems = await this.getAll('menu_items');
+        const items = rawItems.map(i => this._normalizeItem(i));
         return items.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
     }
 
     async getMenuItem(id) {
         const items = await this.getMenuItems();
-        return items.find(i => i.id === id) || await this.get('menu_items', id);
+        const found = items.find(i => i.id === id) || await this.get('menu_items', id);
+        return found ? this._normalizeItem(found) : null;
     }
 
     async addMenuItem(item) {
+        const itemWithImgs = this._normalizeItem(item);
         try {
             const res = await fetch('/api/menu', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
+                body: JSON.stringify(itemWithImgs)
             });
             if (res.ok) {
-                const newItem = await res.json();
+                const newItem = this._normalizeItem(await res.json());
                 await this.put('menu_items', newItem);
                 this.notifyChange('menu');
                 return newItem;
@@ -681,21 +799,27 @@ class CrustoraDB {
             console.warn('API add failed, saving to local DB:', e);
         }
         const id = item.id || `item_${Date.now()}`;
-        const localItem = { ...item, id, price: Number(item.price) || 0 };
+        const localItem = this._normalizeItem({ ...itemWithImgs, id, price: Number(item.price) || 0 });
         await this.put('menu_items', localItem);
         this.notifyChange('menu');
         return localItem;
     }
 
     async updateMenuItem(id, updates) {
+        const normalizedUpdates = { ...updates };
+        if (updates.images !== undefined || updates.img !== undefined) {
+            const temp = this._normalizeItem({ ...updates, img: updates.img, images: updates.images });
+            normalizedUpdates.images = temp.images;
+            normalizedUpdates.img = temp.img;
+        }
         try {
             const res = await fetch(`/api/menu/${encodeURIComponent(id)}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updates)
+                body: JSON.stringify(normalizedUpdates)
             });
             if (res.ok) {
-                const updated = await res.json();
+                const updated = this._normalizeItem(await res.json());
                 await this.put('menu_items', updated);
                 this.notifyChange('menu');
                 return updated;
@@ -704,7 +828,7 @@ class CrustoraDB {
             console.warn('API update failed, saving locally:', e);
         }
         const existing = await this.getMenuItem(id);
-        const updated = { ...existing, ...updates };
+        const updated = this._normalizeItem({ ...existing, ...normalizedUpdates });
         await this.put('menu_items', updated);
         this.notifyChange('menu');
         return updated;

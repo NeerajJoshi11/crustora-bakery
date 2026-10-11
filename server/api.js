@@ -110,36 +110,72 @@ export async function handleApiRequest(req, res) {
         // --- MENU ENDPOINTS ---
         if (pathname === '/api/menu' && method === 'GET') {
             const result = await query(`
-                SELECT id, name, category, description as desc, price, img, badge, is_available as "isAvailable", created_at as "createdAt", updated_at as "updatedAt"
+                SELECT id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", created_at as "createdAt", updated_at as "updatedAt"
                 FROM menu_items
                 ORDER BY category ASC, name ASC;
             `);
-            return sendJson(res, 200, result.rows);
+            const items = result.rows.map(row => {
+                let imgs = [];
+                if (Array.isArray(row.images)) {
+                    imgs = row.images;
+                } else if (typeof row.images === 'string') {
+                    try { imgs = JSON.parse(row.images); } catch (e) { imgs = []; }
+                }
+                if (!Array.isArray(imgs) || imgs.length === 0) {
+                    imgs = row.img ? [row.img] : ['assets/images/bento_cake.png'];
+                }
+                return {
+                    ...row,
+                    images: imgs,
+                    img: imgs[0] || row.img || 'assets/images/bento_cake.png'
+                };
+            });
+            return sendJson(res, 200, items);
         }
 
         if (pathname === '/api/menu' && method === 'POST') {
             const body = await parseBody(req);
             const id = body.id || `item_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            
+            let images = Array.isArray(body.images) && body.images.length > 0
+                ? body.images.filter(Boolean)
+                : (body.img ? [body.img] : ['assets/images/bento_cake.png']);
+            const primaryImg = images[0] || body.img || 'assets/images/bento_cake.png';
+
             const result = await query(`
-                INSERT INTO menu_items (id, name, category, description, price, img, badge, is_available, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-                RETURNING id, name, category, description as desc, price, img, badge, is_available as "isAvailable", created_at as "createdAt";
+                INSERT INTO menu_items (id, name, category, description, price, img, images, badge, is_available, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+                RETURNING id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", created_at as "createdAt";
             `, [
                 id,
                 body.name || 'Untitled Delight',
                 body.category || 'Cakes',
                 body.desc || '',
                 Number(body.price) || 0,
-                body.img || 'assets/images/bento_cake.png',
+                primaryImg,
+                JSON.stringify(images),
                 body.badge || null,
                 body.isAvailable !== false
             ]);
-            return sendJson(res, 201, result.rows[0]);
+            const row = result.rows[0];
+            let imgs = Array.isArray(row.images) ? row.images : (row.images ? JSON.parse(row.images) : [row.img]);
+            return sendJson(res, 201, { ...row, images: imgs });
         }
 
         if (pathname.startsWith('/api/menu/') && method === 'PUT') {
             const id = decodeURIComponent(pathname.replace('/api/menu/', ''));
             const body = await parseBody(req);
+
+            let imagesJson = null;
+            let primaryImg = body.img;
+            if (body.images !== undefined) {
+                const imgs = Array.isArray(body.images) ? body.images.filter(Boolean) : (body.img ? [body.img] : []);
+                imagesJson = JSON.stringify(imgs.length > 0 ? imgs : [primaryImg || 'assets/images/bento_cake.png']);
+                if (imgs.length > 0 && !primaryImg) {
+                    primaryImg = imgs[0];
+                }
+            }
+
             const result = await query(`
                 UPDATE menu_items
                 SET name = COALESCE($1, name),
@@ -147,23 +183,27 @@ export async function handleApiRequest(req, res) {
                     description = COALESCE($3, description),
                     price = COALESCE($4, price),
                     img = COALESCE($5, img),
-                    badge = $6,
-                    is_available = COALESCE($7, is_available),
+                    images = COALESCE($6, images),
+                    badge = $7,
+                    is_available = COALESCE($8, is_available),
                     updated_at = NOW()
-                WHERE id = $8
-                RETURNING id, name, category, description as desc, price, img, badge, is_available as "isAvailable", updated_at as "updatedAt";
+                WHERE id = $9
+                RETURNING id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", updated_at as "updatedAt";
             `, [
                 body.name,
                 body.category,
                 body.desc,
                 body.price !== undefined ? Number(body.price) : null,
-                body.img,
+                primaryImg,
+                imagesJson,
                 body.badge !== undefined ? body.badge : null,
                 body.isAvailable,
                 id
             ]);
             if (result.rows.length === 0) return sendJson(res, 404, { error: 'Item not found' });
-            return sendJson(res, 200, result.rows[0]);
+            const row = result.rows[0];
+            let imgs = Array.isArray(row.images) ? row.images : (row.images ? JSON.parse(row.images) : [row.img]);
+            return sendJson(res, 200, { ...row, images: imgs });
         }
 
         if (pathname.startsWith('/api/menu/') && pathname.endsWith('/toggle') && method === 'PATCH') {
@@ -340,7 +380,7 @@ export async function handleApiRequest(req, res) {
         // --- EXPORT, IMPORT & RESET ---
         if (pathname === '/api/export' && method === 'GET') {
             const [items, users, orders, settings] = await Promise.all([
-                query(`SELECT id, name, category, description as desc, price, img, badge, is_available as "isAvailable" FROM menu_items`),
+                query(`SELECT id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable" FROM menu_items`),
                 query(`SELECT id, name, email, role, status, created_at as "createdAt" FROM users`),
                 query(`SELECT id, customer_email as "customerEmail", customer_name as "customerName", order_text as "orderText", items, total, status, channel, created_at as "createdAt" FROM orders`),
                 query(`SELECT value FROM settings WHERE key = 'config'`)

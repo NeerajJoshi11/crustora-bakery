@@ -470,68 +470,87 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Bakery Item Photo *</label>
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+                            <label style="margin-bottom: 0; font-weight: 700;">Product Photos & Gallery *</label>
+                            <span class="gallery-counter-badge" id="galleryCountBadge">1 photo</span>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.75rem;">
+                            Add multiple pictures for this treat. The <strong>Cover Photo</strong> (⭐) is displayed on the main storefront catalog, and all pictures appear in the customer image slider.
+                        </p>
                         
                         <!-- Image Upload Mode Tabs -->
                         <div class="image-upload-tabs">
                             <button type="button" class="img-tab-btn active" data-img-mode="upload">📁 Upload from Device</button>
-                            <button type="button" class="img-tab-btn" data-img-mode="preset">🎂 Bakery Preset</button>
+                            <button type="button" class="img-tab-btn" data-img-mode="preset">🎂 Bakery Presets</button>
                             <button type="button" class="img-tab-btn" data-img-mode="url">🔗 Image URL</button>
                         </div>
 
-                        <!-- 1. Drag & Drop File Upload Panel -->
+                        <!-- 1. Drag & Drop File Upload Panel (Supports Multiple Files) -->
                         <div class="image-upload-panel active" id="uploadPanel">
-                            <div class="upload-dropzone" id="uploadDropzone" tabindex="0" role="button" aria-label="Upload bakery item photo">
-                                <input type="file" id="itemFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                            <div class="upload-dropzone" id="uploadDropzone" tabindex="0" role="button" aria-label="Upload bakery item photos">
+                                <input type="file" id="itemFileInput" accept="image/png, image/jpeg, image/webp" multiple style="display: none;">
                                 <div class="dropzone-content">
                                     <div class="dropzone-icon">📸</div>
                                     <div class="dropzone-text">
-                                        <strong>Click to browse</strong> or drag & drop photo here
+                                        <strong>Click to browse</strong> or drag & drop one or multiple photos
                                     </div>
-                                    <span class="dropzone-sub">PNG, JPG, or WebP · Auto-optimized for web</span>
+                                    <span class="dropzone-sub">PNG, JPG, or WebP · Select multiple photos · Auto-optimized for web</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 2. Existing Presets Panel -->
                         <div class="image-upload-panel" id="presetPanel" style="display: none; margin-bottom: 0.75rem;">
-                            <select id="itemImagePreset" class="form-control">
-                                <option value="">-- Choose Existing Bakery Photo --</option>
-                                <option value="assets/images/iconic_bento_candle.jpg">Iconic Bento Cake (Golden Candle)</option>
-                                <option value="assets/images/fudge_brownies.jpg">Fudgy Almond Brownies</option>
-                                <option value="assets/images/sana_gappu_sher.jpg">Custom Lettering Bento / Brownie</option>
-                                <option value="assets/images/bento_cake.png">Vanilla Bento Cake</option>
-                                <option value="assets/images/atta_bento.png">Atta Bento Cake (Eggless)</option>
-                                <option value="assets/images/truffle_cake.png">Chocolate Truffle Cake</option>
-                                <option value="assets/images/pink_cupcakes.png">Pastel Cupcakes</option>
-                                <option value="assets/images/chocolate_tub_cake_1775410734736.png">Chocolate Tub Cake</option>
-                                <option value="assets/images/strawberry_jar_cake_1775410667006.png">Strawberry Jar Cake</option>
-                                <option value="assets/images/tea_cake.png">Tea Loaf Cake</option>
-                                <option value="assets/images/assorted_chocolates_1775410684129.png">Assorted Chocolates</option>
-                                <option value="assets/images/scented_candles_1775410699647.png">Scented Candles</option>
-                                <option value="assets/images/gift_hamper_1775410716144.png">Luxury Gift Hamper</option>
-                            </select>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="itemImagePreset" class="form-control" style="flex: 1;">
+                                    <option value="">-- Choose Existing Bakery Photo to Add --</option>
+                                    <option value="assets/images/iconic_bento_candle.jpg">Iconic Bento Cake (Golden Candle)</option>
+                                    <option value="assets/images/custom_bento_cake.jpg">Custom Bento Cake Celebration</option>
+                                    <option value="assets/images/sana_gappu_sher.jpg">Custom Lettering Bento / Brownie</option>
+                                    <option value="assets/images/custom_message_bento.jpg">Custom Message Bento</option>
+                                    <option value="assets/images/fudge_brownies.jpg">Fudgy Almond Brownies</option>
+                                    <option value="assets/images/bento_cake.png">Vanilla Bento Cake</option>
+                                    <option value="assets/images/atta_bento.png">Atta Bento Cake (Eggless)</option>
+                                    <option value="assets/images/truffle_cake.png">Chocolate Truffle Cake</option>
+                                    <option value="assets/images/pink_cupcakes.png">Pastel Cupcakes</option>
+                                    <option value="assets/images/chocolate_tub_cake_1775410734736.png">Chocolate Tub Cake</option>
+                                    <option value="assets/images/strawberry_jar_cake_1775410667006.png">Strawberry Jar Cake</option>
+                                    <option value="assets/images/tea_cake.png">Tea Loaf Cake</option>
+                                    <option value="assets/images/almond_brownies.png">Roasted Almond Brownie</option>
+                                    <option value="assets/images/assorted_chocolates_1775410684129.png">Assorted Chocolates</option>
+                                    <option value="assets/images/scented_candles_1775410699647.png">Scented Candles</option>
+                                    <option value="assets/images/gift_hamper_1775410716144.png">Luxury Gift Hamper</option>
+                                </select>
+                                <button type="button" class="btn-outline-action" id="btnAddPresetImg" style="padding: 0.55rem 1rem; white-space: nowrap;">
+                                    + Add Photo
+                                </button>
+                            </div>
                         </div>
 
                         <!-- 3. Direct URL Panel -->
                         <div class="image-upload-panel" id="urlPanel" style="display: none; margin-bottom: 0.75rem;">
-                            <input type="text" id="itemUrlInput" class="form-control"
-                                placeholder="https://example.com/cake.jpg or assets/images/...">
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="text" id="itemUrlInput" class="form-control" style="flex: 1;"
+                                    placeholder="https://example.com/cake.jpg or assets/images/...">
+                                <button type="button" class="btn-outline-action" id="btnAddUrlImg" style="padding: 0.55rem 1rem; white-space: nowrap;">
+                                    + Add Photo
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- Hidden canonical image input for form submission -->
+                        <!-- Hidden canonical inputs for form submission -->
                         <input type="hidden" id="itemInputImg" value="assets/images/iconic_bento_candle.jpg" required>
+                        <input type="hidden" id="itemInputImages" value="[]">
 
-                        <!-- Live Interactive Image Preview Card -->
-                        <div class="img-preview-card" id="imgPreviewCard">
-                            <div class="preview-thumb-wrap">
-                                <img id="itemImgPreview" src="assets/images/iconic_bento_candle.jpg" alt="Preview">
+                        <!-- Interactive Multi-Image Gallery Manager -->
+                        <div class="product-gallery-manager" id="productGalleryManager">
+                            <div class="gallery-manager-header">
+                                <span class="gallery-manager-title">Photos List</span>
+                                <span class="gallery-manager-hint">The first photo is the <strong>Cover Photo</strong></span>
                             </div>
-                            <div class="preview-meta">
-                                <div class="preview-title" id="previewMetaTitle">Iconic Bento Cake</div>
-                                <div class="preview-info" id="previewMetaInfo">Ready for storefront display</div>
+                            <div class="gallery-thumbs-grid" id="galleryThumbsGrid">
+                                <!-- Thumbnails injected by JavaScript -->
                             </div>
-                            <button type="button" class="btn-clear-img" id="btnClearImg" title="Reset Image">✕</button>
                         </div>
                     </div>
                 </div>

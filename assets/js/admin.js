@@ -231,11 +231,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ? `<span class="pill pill-accent">${escapeHtml(item.badge)}</span>`
                 : `<span style="color: var(--text-light); font-size: 0.85rem;">—</span>`;
 
+            const itemImgs = Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.img ? [item.img] : []);
+            const photoCount = itemImgs.length;
+            const photoBadge = photoCount > 1 ? `<span class="thumb-count-pill" title="${photoCount} photos">📷 ${photoCount}</span>` : '';
+
             return `
                 <tr>
                     <td>
                         <div class="item-cell">
-                            <img src="${item.img || 'assets/images/bento_cake.png'}" alt="${escapeHtml(item.name)}" class="item-thumb" onerror="this.src='assets/images/bento_cake.png'">
+                            <div class="item-thumb-wrapper">
+                                <img src="${item.img || 'assets/images/bento_cake.png'}" alt="${escapeHtml(item.name)}" class="item-thumb" onerror="this.src='assets/images/bento_cake.png'">
+                                ${photoBadge}
+                            </div>
                             <div class="item-details">
                                 <h4>${escapeHtml(item.name)}</h4>
                                 <p title="${escapeHtml(item.desc || '')}">${escapeHtml(item.desc || '')}</p>
@@ -305,23 +312,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     menuSearchInput.addEventListener('input', () => renderMenuItems());
 
     // ----------------------------------------------------
-    // Bakery Item Image Uploader Logic (Upload / Preset / URL)
+    // Bakery Item Image Uploader & Gallery Logic (Upload / Preset / URL)
     // ----------------------------------------------------
     const uploadDropzone = document.getElementById('uploadDropzone');
     const itemFileInput = document.getElementById('itemFileInput');
     const itemImagePreset = document.getElementById('itemImagePreset');
+    const btnAddPresetImg = document.getElementById('btnAddPresetImg');
     const itemUrlInput = document.getElementById('itemUrlInput');
+    const btnAddUrlImg = document.getElementById('btnAddUrlImg');
     const itemInputImg = document.getElementById('itemInputImg');
-    const itemImgPreview = document.getElementById('itemImgPreview');
-    const previewMetaTitle = document.getElementById('previewMetaTitle');
-    const previewMetaInfo = document.getElementById('previewMetaInfo');
-    const btnClearImg = document.getElementById('btnClearImg');
+    const itemInputImages = document.getElementById('itemInputImages');
+    const galleryCountBadge = document.getElementById('galleryCountBadge');
+    const galleryThumbsGrid = document.getElementById('galleryThumbsGrid');
     const uploadPanel = document.getElementById('uploadPanel');
     const presetPanel = document.getElementById('presetPanel');
     const urlPanel = document.getElementById('urlPanel');
     const imgTabBtns = document.querySelectorAll('.img-tab-btn');
 
     const DEFAULT_ITEM_IMG = 'assets/images/iconic_bento_candle.jpg';
+    let currentModalImages = [];
 
     function setImageMode(mode) {
         imgTabBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-img-mode') === mode));
@@ -383,19 +392,118 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    async function handleFileSelect(file) {
-        if (!file) return;
+    // Render multi-image thumbnail manager
+    function renderGalleryManager() {
+        if (!galleryThumbsGrid) return;
+
+        if (galleryCountBadge) {
+            const count = currentModalImages.length;
+            galleryCountBadge.textContent = `${count} ${count === 1 ? 'photo' : 'photos'}`;
+        }
+
+        if (currentModalImages.length === 0) {
+            galleryThumbsGrid.innerHTML = `
+                <div class="gallery-empty-state" style="grid-column: 1 / -1;">
+                    <p>No photos added yet. Upload or pick a preset above! 📸</p>
+                </div>
+            `;
+            if (itemInputImg) itemInputImg.value = DEFAULT_ITEM_IMG;
+            if (itemInputImages) itemInputImages.value = JSON.stringify([]);
+            return;
+        }
+
+        // Sync hidden inputs
+        if (itemInputImg) itemInputImg.value = currentModalImages[0];
+        if (itemInputImages) itemInputImages.value = JSON.stringify(currentModalImages);
+
+        galleryThumbsGrid.innerHTML = currentModalImages.map((src, idx) => {
+            const isCover = idx === 0;
+            return `
+                <div class="gallery-thumb-item ${isCover ? 'is-cover' : ''}">
+                    <div class="thumb-image-holder">
+                        <img src="${escapeHtml(src)}" alt="Photo ${idx + 1}" onerror="this.src='assets/images/bento_cake.png'">
+                        ${isCover ? '<span class="thumb-cover-tag">⭐ Cover</span>' : ''}
+                        <span class="thumb-number-tag">#${idx + 1}</span>
+                    </div>
+                    <div class="thumb-actions-bar">
+                        <button type="button" class="thumb-btn" data-action="move-left" data-index="${idx}" ${idx === 0 ? 'disabled' : ''} title="Move Left / Earlier">◀</button>
+                        <button type="button" class="thumb-btn thumb-btn-remove" data-action="remove" data-index="${idx}" title="Remove Photo">✕</button>
+                        <button type="button" class="thumb-btn" data-action="move-right" data-index="${idx}" ${idx === currentModalImages.length - 1 ? 'disabled' : ''} title="Move Right / Later">▶</button>
+                    </div>
+                    ${!isCover ? `<button type="button" class="thumb-btn-make-cover" data-action="make-cover" data-index="${idx}">⭐ Set Cover</button>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Handle clicks inside gallery thumbs grid (delegation)
+    if (galleryThumbsGrid) {
+        galleryThumbsGrid.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn || btn.disabled) return;
+
+            const action = btn.getAttribute('data-action');
+            const index = Number(btn.getAttribute('data-index'));
+
+            if (action === 'make-cover') {
+                if (index > 0 && index < currentModalImages.length) {
+                    const item = currentModalImages.splice(index, 1)[0];
+                    currentModalImages.unshift(item);
+                    renderGalleryManager();
+                    showToast('⭐ Cover photo updated!', 'success');
+                }
+            } else if (action === 'move-left') {
+                if (index > 0) {
+                    const temp = currentModalImages[index - 1];
+                    currentModalImages[index - 1] = currentModalImages[index];
+                    currentModalImages[index] = temp;
+                    renderGalleryManager();
+                }
+            } else if (action === 'move-right') {
+                if (index < currentModalImages.length - 1) {
+                    const temp = currentModalImages[index + 1];
+                    currentModalImages[index + 1] = currentModalImages[index];
+                    currentModalImages[index] = temp;
+                    renderGalleryManager();
+                }
+            } else if (action === 'remove') {
+                currentModalImages.splice(index, 1);
+                if (currentModalImages.length === 0) {
+                    currentModalImages = [DEFAULT_ITEM_IMG];
+                    showToast('Reset to default photo (at least 1 photo required)', 'info');
+                } else {
+                    showToast('Photo removed.', 'info');
+                }
+                renderGalleryManager();
+            }
+        });
+    }
+
+    // Process multiple selected or dropped files
+    async function handleFilesSelect(fileList) {
+        if (!fileList || fileList.length === 0) return;
+        const validFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+        if (validFiles.length === 0) {
+            showToast('Please select valid image files.', 'warning');
+            return;
+        }
+
         try {
-            showToast('Optimizing bakery image...', 'info');
-            const { dataUrl, originalName, sizeKb } = await processAndCompressImage(file);
-            if (itemInputImg) itemInputImg.value = dataUrl;
-            if (itemImgPreview) itemImgPreview.src = dataUrl;
-            if (previewMetaTitle) previewMetaTitle.textContent = originalName;
-            if (previewMetaInfo) previewMetaInfo.textContent = `Uploaded from device (${sizeKb} KB optimized)`;
-            showToast('📸 Photo uploaded & optimized!', 'success');
+            showToast(`Optimizing ${validFiles.length} photo(s)...`, 'info');
+            for (const file of validFiles) {
+                const { dataUrl } = await processAndCompressImage(file);
+                // If currently only holding the default placeholder, replace it
+                if (currentModalImages.length === 1 && currentModalImages[0] === DEFAULT_ITEM_IMG) {
+                    currentModalImages = [dataUrl];
+                } else {
+                    currentModalImages.push(dataUrl);
+                }
+            }
+            renderGalleryManager();
+            showToast(`📸 ${validFiles.length} photo(s) added!`, 'success');
         } catch (err) {
             console.error(err);
-            showToast(err.message || 'Error processing image', 'error');
+            showToast(err.message || 'Error processing images', 'error');
         }
     }
 
@@ -409,8 +517,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         itemFileInput.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (file) handleFileSelect(file);
+            if (e.target.files) handleFilesSelect(e.target.files);
+            itemFileInput.value = ''; // Reset input so same files can be re-added
         });
 
         // Drag & Drop handlers
@@ -432,44 +540,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         uploadDropzone.addEventListener('drop', (e) => {
             const dt = e.dataTransfer;
-            const file = dt && dt.files && dt.files[0];
-            if (file) handleFileSelect(file);
+            if (dt && dt.files) handleFilesSelect(dt.files);
         });
     }
 
-    if (itemImagePreset) {
-        itemImagePreset.addEventListener('change', () => {
+    // Add preset photo button
+    if (btnAddPresetImg && itemImagePreset) {
+        btnAddPresetImg.addEventListener('click', () => {
             const val = itemImagePreset.value;
-            if (!val) return;
-            if (itemInputImg) itemInputImg.value = val;
-            if (itemImgPreview) itemImgPreview.src = val;
-            const text = itemImagePreset.options[itemImagePreset.selectedIndex].text;
-            if (previewMetaTitle) previewMetaTitle.textContent = text;
-            if (previewMetaInfo) previewMetaInfo.textContent = 'Bakery Preset Asset';
+            if (!val) {
+                showToast('Please choose a preset photo first.', 'warning');
+                return;
+            }
+            if (currentModalImages.length === 1 && currentModalImages[0] === DEFAULT_ITEM_IMG) {
+                currentModalImages = [val];
+            } else if (!currentModalImages.includes(val)) {
+                currentModalImages.push(val);
+            } else {
+                showToast('This photo is already added.', 'info');
+                return;
+            }
+            renderGalleryManager();
+            showToast('🎂 Bakery preset photo added!', 'success');
         });
     }
 
-    if (itemUrlInput) {
-        itemUrlInput.addEventListener('input', () => {
+    // Add direct URL photo button
+    if (btnAddUrlImg && itemUrlInput) {
+        btnAddUrlImg.addEventListener('click', () => {
             const val = itemUrlInput.value.trim();
-            if (!val) return;
-            if (itemInputImg) itemInputImg.value = val;
-            if (itemImgPreview) itemImgPreview.src = val;
-            if (previewMetaTitle) previewMetaTitle.textContent = 'Custom Web Photo';
-            if (previewMetaInfo) previewMetaInfo.textContent = 'External Image URL';
-        });
-    }
-
-    if (btnClearImg) {
-        btnClearImg.addEventListener('click', () => {
-            if (itemInputImg) itemInputImg.value = DEFAULT_ITEM_IMG;
-            if (itemImgPreview) itemImgPreview.src = DEFAULT_ITEM_IMG;
-            if (itemFileInput) itemFileInput.value = '';
-            if (itemImagePreset) itemImagePreset.value = '';
-            if (itemUrlInput) itemUrlInput.value = '';
-            if (previewMetaTitle) previewMetaTitle.textContent = 'Default Bakery Photo';
-            if (previewMetaInfo) previewMetaInfo.textContent = 'Ready for storefront display';
-            showToast('Image reset to default.', 'info');
+            if (!val) {
+                showToast('Please enter an image URL.', 'warning');
+                return;
+            }
+            if (currentModalImages.length === 1 && currentModalImages[0] === DEFAULT_ITEM_IMG) {
+                currentModalImages = [val];
+            } else {
+                currentModalImages.push(val);
+            }
+            itemUrlInput.value = '';
+            renderGalleryManager();
+            showToast('🔗 Image URL added to photos!', 'success');
         });
     }
 
@@ -491,34 +602,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('itemInputBadge').value = item.badge || '';
             document.getElementById('itemStockCheckbox').checked = item.isAvailable !== false;
             
-            const currentImg = item.img || DEFAULT_ITEM_IMG;
-            if (itemInputImg) itemInputImg.value = currentImg;
-            if (itemImgPreview) itemImgPreview.src = currentImg;
-
-            if (currentImg.startsWith('data:')) {
-                setImageMode('upload');
-                if (previewMetaTitle) previewMetaTitle.textContent = item.name || 'Uploaded Photo';
-                if (previewMetaInfo) previewMetaInfo.textContent = 'Custom uploaded photo (stored in database)';
-            } else if (itemImagePreset && Array.from(itemImagePreset.options).some(o => o.value === currentImg)) {
-                itemImagePreset.value = currentImg;
-                setImageMode('preset');
-                if (previewMetaTitle) previewMetaTitle.textContent = item.name;
-                if (previewMetaInfo) previewMetaInfo.textContent = 'Bakery Preset Asset';
-            } else {
-                if (itemUrlInput) itemUrlInput.value = currentImg;
-                setImageMode('url');
-                if (previewMetaTitle) previewMetaTitle.textContent = item.name;
-                if (previewMetaInfo) previewMetaInfo.textContent = 'Custom Image Path / URL';
-            }
+            // Populate multiple images list
+            const itemImgs = Array.isArray(item.images) && item.images.length > 0
+                ? [...item.images]
+                : (item.img ? [item.img] : [DEFAULT_ITEM_IMG]);
+            currentModalImages = itemImgs;
+            renderGalleryManager();
+            setImageMode('upload');
         } else {
             document.getElementById('menuModalTitle').textContent = 'Add Bakery Delight';
             document.getElementById('menuItemId').value = '';
             if (categories.length > 0) catSelect.value = categories[0].name;
             document.getElementById('itemStockCheckbox').checked = true;
-            if (itemInputImg) itemInputImg.value = DEFAULT_ITEM_IMG;
-            if (itemImgPreview) itemImgPreview.src = DEFAULT_ITEM_IMG;
-            if (previewMetaTitle) previewMetaTitle.textContent = 'Default Bakery Photo';
-            if (previewMetaInfo) previewMetaInfo.textContent = 'Upload a photo or pick a preset';
+            
+            currentModalImages = [DEFAULT_ITEM_IMG];
+            renderGalleryManager();
             setImageMode('upload');
             if (itemImagePreset) itemImagePreset.value = '';
             if (itemUrlInput) itemUrlInput.value = '';
@@ -543,13 +641,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const desc = document.getElementById('itemInputDesc').value.trim();
         const badge = document.getElementById('itemInputBadge').value.trim();
         const isAvailable = document.getElementById('itemStockCheckbox').checked;
-        const img = (itemInputImg ? itemInputImg.value.trim() : '') || DEFAULT_ITEM_IMG;
+        
+        // Multi-image payload
+        const images = currentModalImages.length > 0 ? [...currentModalImages] : [DEFAULT_ITEM_IMG];
+        const img = images[0] || DEFAULT_ITEM_IMG;
 
         if (id) {
-            await db.updateMenuItem(id, { name, category, price, desc, badge, isAvailable, img });
+            await db.updateMenuItem(id, { name, category, price, desc, badge, isAvailable, img, images });
             showToast(`Updated "${name}" successfully!`, 'success');
         } else {
-            await db.addMenuItem({ name, category, price, desc, badge, isAvailable, img });
+            await db.addMenuItem({ name, category, price, desc, badge, isAvailable, img, images });
             showToast(`Added "${name}" to the menu!`, 'success');
         }
 
