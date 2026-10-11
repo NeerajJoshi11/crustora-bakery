@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Crustora Bakery</title>
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Background Ambient Orbs -->
+    <div class="admin-bg-orb orb-1"></div>
+    <div class="admin-bg-orb orb-2"></div>
+
+    <!-- ==========================================
+         PIN Lock Screen Overlay (Passcode Access)
+         ========================================== -->
+    <div id="pinLockOverlay" class="pin-lock-overlay">
+        <div class="pin-card" id="pinCard">
+            <div class="pin-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h2>Crustora Admin</h2>
+            <p>Enter your secret Admin PIN to manage bakery operations & database.</p>
+
+            <form id="pinForm">
+                <div class="pin-input-group">
+                    <input type="password" id="adminPinInput" class="pin-input" placeholder="••••••••" maxlength="20"
+                        autofocus autocomplete="current-password" required>
+                    <button type="button" id="togglePinVisibilityBtn" class="pin-toggle-btn" title="Toggle visibility">
+                        👁️
+                    </button>
+                </div>
+                <div id="pinErrorMsg" class="pin-error-msg"></div>
+                <button type="submit" class="pin-submit-btn" id="pinSubmitBtn">
+                    <span>Unlock Dashboard</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="pin-hint">
+                💡 Default Master PIN: <strong>admin123</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         Admin Top Navigation Bar
+         ========================================== -->
+    <header class="admin-navbar">
+        <div class="admin-nav-left">
+            <a href="index.html" class="admin-logo-link">
+                <img src="assets/images/logo.png" alt="Crustora Logo">
+            </a>
+            <span class="admin-badge">Admin Portal</span>
+        </div>
+        <div class="admin-nav-right">
+            <a href="index.html" class="btn-secondary-link" target="_blank" title="View Customer Storefront">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>Live Bakery</span>
+            </a>
+            <button id="lockDashboardBtn" class="btn-lock" title="Lock Admin Portal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Lock</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==========================================
+         Admin Main Body Container
+         ========================================== -->
+    <main class="admin-container">
+        <!-- Header & Title -->
+        <div class="admin-header">
+            <div class="admin-title">
+                <h1>Bakery Operations & Database</h1>
+                <p>Manage your live menu items, categories, customer orders, and database records in real time.</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="admin-tabs" id="adminTabs">
+            <button class="tab-btn active" data-tab="overview">
+                📊 Overview
+            </button>
+            <button class="tab-btn" data-tab="menu">
+                🍰 Menu Items
+                <span class="tab-badge" id="menuCountBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="categories">
+                🏷️ Categories
+                <span class="tab-badge" id="categoriesCountBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="orders">
+                🛍️ Orders
+                <span class="tab-badge" id="ordersCountBadge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="settings">
+                ⚙️ Database & Settings
+            </button>
+        </nav>
+
+        <!-- ==========================================
+             TAB 1: Overview
+             ========================================== -->
+        <section id="tab-overview" class="tab-content active">
+            <!-- KPI Summary Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-revenue">₹</div>
+                    <div class="kpi-info">
+                        <h3>Estimated Revenue</h3>
+                        <div class="kpi-value" id="kpiRevenue">₹0</div>
+                        <div class="kpi-sub">From recorded customer orders</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-orders">🛍️</div>
+                    <div class="kpi-info">
+                        <h3>Total Orders</h3>
+                        <div class="kpi-value" id="kpiOrders">0</div>
+                        <div class="kpi-sub" id="kpiOrdersSub">0 pending</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-menu">🧁</div>
+                    <div class="kpi-info">
+                        <h3>Menu Delights</h3>
+                        <div class="kpi-value" id="kpiMenuItems">0</div>
+                        <div class="kpi-sub" id="kpiInStockSub">0 in stock</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-categories">🏷️</div>
+                    <div class="kpi-info">
+                        <h3>Categories</h3>
+                        <div class="kpi-value" id="kpiCategories">0</div>
+                        <div class="kpi-sub">Organized product lines</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders Quick Preview -->
+            <div class="panel-card">
+                <div class="panel-header-row">
+                    <h2>Recent Customer Orders</h2>
+                    <button class="btn-outline-action" onclick="document.querySelector('[data-tab=\'orders\']').click()">
+                        View All Orders →
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Channel</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overviewRecentOrdersBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             TAB 2: Menu Items Management
+             ========================================== -->
+        <section id="tab-menu" class="tab-content">
+            <div class="panel-card">
+                <div class="panel-header-row">
+                    <div>
+                        <h2>Menu Catalog & Availability</h2>
+                        <p style="color: var(--text-light); font-size: 0.9rem;">
+                            Items added or updated here appear immediately on the customer storefront.
+                        </p>
+                    </div>
+                    <div class="action-bar">
+                        <div class="search-box">
+                            <span class="search-box-icon">🔍</span>
+                            <input type="text" id="menuSearchInput" placeholder="Search menu item...">
+                        </div>
+                        <button class="btn-primary-action" id="openAddMenuItemBtn">
+                            <span>+ Add Bakery Item</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Chips -->
+                <div class="category-chips-row" id="menuCategoryChips">
+                    <button class="chip-btn active" data-category="ALL">All Categories</button>
+                    <!-- Injected by JS -->
+                </div>
+
+                <!-- Menu Items Table -->
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Badge</th>
+                                <th>Stock Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="menuItemsTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             TAB 2B: Categories Management
+             ========================================== -->
+        <section id="tab-categories" class="tab-content">
+            <div class="panel-card">
+                <div class="panel-header-row">
+                    <div>
+                        <h2>Bakery Categories</h2>
+                        <p style="color: var(--text-light); font-size: 0.9rem;">
+                            Add, modify, or remove product categories. Renaming a category automatically updates all associated treats.
+                        </p>
+                    </div>
+                    <div class="action-bar">
+                        <div class="search-box">
+                            <span class="search-box-icon">🔍</span>
+                            <input type="text" id="categoriesSearchInput" placeholder="Search categories...">
+                        </div>
+                        <button class="btn-primary-action" id="openAddCategoryBtn">
+                            <span>+ Add Category</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Description</th>
+                                <th>Items Count</th>
+                                <th>Display Order</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             TAB 3: Orders Management
+             ========================================== -->
+        <section id="tab-orders" class="tab-content">
+            <div class="panel-card">
+                <div class="panel-header-row">
+                    <div>
+                        <h2>Orders & Fulfillment</h2>
+                        <p style="color: var(--text-light); font-size: 0.9rem;">
+                            Track customer orders placed via WhatsApp, Instagram, or store checkout.
+                        </p>
+                    </div>
+                    <div class="action-bar">
+                        <div class="search-box">
+                            <span class="search-box-icon">🔍</span>
+                            <input type="text" id="ordersSearchInput" placeholder="Search orders...">
+                        </div>
+                        <select id="orderStatusFilter" class="filter-select">
+                            <option value="ALL">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Preparing">Preparing</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Order Summary</th>
+                                <th>Channel</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             TAB 5: Settings & Database Management
+             ========================================== -->
+        <section id="tab-settings" class="tab-content">
+            <div class="settings-grid">
+                <!-- Supabase Database Status Card -->
+                <div class="settings-card" style="border-left: 4px solid #10b981;">
+                    <h3>⚡ Supabase PostgreSQL</h3>
+                    <p>
+                        <strong>Status:</strong> <span class="pill pill-success">Connected</span><br>
+                        <strong>Host:</strong> aws-0-ap-northeast-2.pooler.supabase.com<br>
+                        <strong>Database:</strong> postgres (Port 6543)<br>
+                        <strong>Tables:</strong> menu_items, users, orders, settings
+                    </p>
+                    <div style="font-size: 0.82rem; color: var(--text-light); margin-top: 0.5rem;">
+                        Live data is synced directly with your cloud PostgreSQL database.
+                    </div>
+                </div>
+
+                <!-- Change Admin PIN -->
+                <div class="settings-card">
+                    <h3>🔐 Admin Passcode</h3>
+                    <p>Update your secret PIN used to unlock this Admin Dashboard.</p>
+                    <form id="changePinForm">
+                        <div class="form-group">
+                            <label for="newAdminPin">New Admin Passcode</label>
+                            <input type="password" id="newAdminPin" class="form-control" placeholder="Enter new PIN"
+                                minlength="4" required>
+                        </div>
+                        <button type="submit" class="btn-primary-action">Save New Passcode</button>
+                    </form>
+                </div>
+
+                <!-- Database Backup & Export -->
+                <div class="settings-card">
+                    <h3>💾 Backup Database</h3>
+                    <p>Export all menu items, customers, orders, and settings as a clean JSON backup file.</p>
+                    <button class="btn-outline-action" id="exportDatabaseBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Download JSON Backup</span>
+                    </button>
+                </div>
+
+                <!-- Database Restore & Import -->
+                <div class="settings-card">
+                    <h3>📥 Restore Database</h3>
+                    <p>Restore your database records from a previously downloaded JSON backup file.</p>
+                    <input type="file" id="importDatabaseInput" accept=".json" style="display: none;">
+                    <button class="btn-outline-action" id="triggerImportBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>Select JSON File to Restore</span>
+                    </button>
+                </div>
+
+                <!-- Reset Menu to Defaults -->
+                <div class="settings-card">
+                    <h3>🔄 Reset to Default Catalog</h3>
+                    <p>Restore the original 17 bakery treats and initial demo users if needed.</p>
+                    <button class="btn-outline-action btn-danger-action" id="resetDefaultsBtn">
+                        <span>Reset to Bakery Defaults</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==========================================
+         MODAL: Add / Edit Menu Item
+         ========================================== -->
+    <div id="menuItemModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="menuModalTitle">Add Bakery Delight</h3>
+                <button type="button" class="btn-close-modal" id="closeMenuModalBtn">&times;</button>
+            </div>
+            <form id="menuItemForm">
+                <div class="modal-body">
+                    <input type="hidden" id="menuItemId">
+
+                    <div class="form-group">
+                        <label for="itemInputName">Item Name *</label>
+                        <input type="text" id="itemInputName" class="form-control" placeholder="e.g. Pistachio Bento Cake"
+                            required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itemInputCategory">Category *</label>
+                            <select id="itemInputCategory" class="form-control" required>
+                                <option value="Cakes">Cakes</option>
+                                <option value="Cupcakes & Muffins">Cupcakes & Muffins</option>
+                                <option value="Tub & Jar Cakes">Tub & Jar Cakes</option>
+                                <option value="Strawberry Special">Strawberry Special</option>
+                                <option value="Brownies">Brownies</option>
+                                <option value="Tea Cakes">Tea Cakes</option>
+                                <option value="Chocolates">Chocolates</option>
+                                <option value="Candles">Candles</option>
+                                <option value="Hampers & Combos">Hampers & Combos</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemInputPrice">Price (₹) *</label>
+                            <input type="number" id="itemInputPrice" class="form-control" placeholder="299" min="0"
+                                required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemInputDesc">Description *</label>
+                        <textarea id="itemInputDesc" class="form-control" rows="3"
+                            placeholder="Delectable details, flavor notes, dietary highlights..." required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itemInputBadge">Badge (Optional)</label>
+                            <input type="text" id="itemInputBadge" class="form-control"
+                                placeholder="e.g. Bestseller, Eggless, New">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemStockCheckbox" style="margin-top: 1.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" id="itemStockCheckbox" checked style="width: 18px; height: 18px;">
+                                <span>In Stock / Available</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bakery Item Photo *</label>
+                        
+                        <!-- Image Upload Mode Tabs -->
+                        <div class="image-upload-tabs">
+                            <button type="button" class="img-tab-btn active" data-img-mode="upload">📁 Upload from Device</button>
+                            <button type="button" class="img-tab-btn" data-img-mode="preset">🎂 Bakery Preset</button>
+                            <button type="button" class="img-tab-btn" data-img-mode="url">🔗 Image URL</button>
+                        </div>
+
+                        <!-- 1. Drag & Drop File Upload Panel -->
+                        <div class="image-upload-panel active" id="uploadPanel">
+                            <div class="upload-dropzone" id="uploadDropzone" tabindex="0" role="button" aria-label="Upload bakery item photo">
+                                <input type="file" id="itemFileInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                                <div class="dropzone-content">
+                                    <div class="dropzone-icon">📸</div>
+                                    <div class="dropzone-text">
+                                        <strong>Click to browse</strong> or drag & drop photo here
+                                    </div>
+                                    <span class="dropzone-sub">PNG, JPG, or WebP · Auto-optimized for web</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Existing Presets Panel -->
+                        <div class="image-upload-panel" id="presetPanel" style="display: none; margin-bottom: 0.75rem;">
+                            <select id="itemImagePreset" class="form-control">
+                                <option value="">-- Choose Existing Bakery Photo --</option>
+                                <option value="assets/images/iconic_bento_candle.jpg">Iconic Bento Cake (Golden Candle)</option>
+                                <option value="assets/images/fudge_brownies.jpg">Fudgy Almond Brownies</option>
+                                <option value="assets/images/sana_gappu_sher.jpg">Custom Lettering Bento / Brownie</option>
+                                <option value="assets/images/bento_cake.png">Vanilla Bento Cake</option>
+                                <option value="assets/images/atta_bento.png">Atta Bento Cake (Eggless)</option>
+                                <option value="assets/images/truffle_cake.png">Chocolate Truffle Cake</option>
+                                <option value="assets/images/pink_cupcakes.png">Pastel Cupcakes</option>
+                                <option value="assets/images/chocolate_tub_cake_1775410734736.png">Chocolate Tub Cake</option>
+                                <option value="assets/images/strawberry_jar_cake_1775410667006.png">Strawberry Jar Cake</option>
+                                <option value="assets/images/tea_cake.png">Tea Loaf Cake</option>
+                                <option value="assets/images/assorted_chocolates_1775410684129.png">Assorted Chocolates</option>
+                                <option value="assets/images/scented_candles_1775410699647.png">Scented Candles</option>
+                                <option value="assets/images/gift_hamper_1775410716144.png">Luxury Gift Hamper</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Direct URL Panel -->
+                        <div class="image-upload-panel" id="urlPanel" style="display: none; margin-bottom: 0.75rem;">
+                            <input type="text" id="itemUrlInput" class="form-control"
+                                placeholder="https://example.com/cake.jpg or assets/images/...">
+                        </div>
+
+                        <!-- Hidden canonical image input for form submission -->
+                        <input type="hidden" id="itemInputImg" value="assets/images/iconic_bento_candle.jpg" required>
+
+                        <!-- Live Interactive Image Preview Card -->
+                        <div class="img-preview-card" id="imgPreviewCard">
+                            <div class="preview-thumb-wrap">
+                                <img id="itemImgPreview" src="assets/images/iconic_bento_candle.jpg" alt="Preview">
+                            </div>
+                            <div class="preview-meta">
+                                <div class="preview-title" id="previewMetaTitle">Iconic Bento Cake</div>
+                                <div class="preview-info" id="previewMetaInfo">Ready for storefront display</div>
+                            </div>
+                            <button type="button" class="btn-clear-img" id="btnClearImg" title="Reset Image">✕</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" id="cancelMenuModalBtn">Cancel</button>
+                    <button type="submit" class="btn-modal-submit" id="saveMenuItemBtn">Save Bakery Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    <!-- ==========================================
+         MODAL: View Order Details
+         ========================================== -->
+    <div id="orderDetailsModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button type="button" class="btn-close-modal" id="closeOrderModalBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <!-- Injected by JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-cancel" id="dismissOrderModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL: Add / Edit Category
+         ========================================== -->
+    <div id="categoryModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 id="categoryModalTitle">Add Bakery Category</h3>
+                <button type="button" class="btn-close-modal" id="closeCategoryModalBtn">&times;</button>
+            </div>
+            <form id="categoryForm">
+                <div class="modal-body">
+                    <input type="hidden" id="categoryId">
+                    <div class="form-group">
+                        <label for="categoryNameInput">Category Name *</label>
+                        <input type="text" id="categoryNameInput" class="form-control" placeholder="e.g. Artisanal Breads" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryDescInput">Description (Optional)</label>
+                        <textarea id="categoryDescInput" class="form-control" rows="2" placeholder="Brief summary of this product collection..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryOrderInput">Display Order</label>
+                        <input type="number" id="categoryOrderInput" class="form-control" placeholder="1" min="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" id="cancelCategoryModalBtn">Cancel</button>
+                    <button type="submit" class="btn-modal-submit" id="saveCategoryBtn">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script type="module" src="assets/js/admin.js"></script>
+</body>
+
+</html>

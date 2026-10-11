@@ -1,0 +1,21 @@
+{
+  "name": "crustora",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "assets/js/script.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "db:migrate": "node server/migrate.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "pg": "^8.23.1",
+    "vite": "^8.0.3"
+  }
+}
