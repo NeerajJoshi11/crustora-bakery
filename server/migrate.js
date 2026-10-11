@@ -71,10 +71,15 @@ export async function runMigrations() {
                 total NUMERIC(10, 2) DEFAULT 0,
                 status VARCHAR(50) DEFAULT 'Pending',
                 channel VARCHAR(50) DEFAULT 'WhatsApp',
+                reference_photo TEXT,
                 created_at TIMESTAMPTZ DEFAULT NOW()
             );
         `);
-        console.log('✅ Table "orders" verified/created.');
+        // Ensure reference_photo column exists if table was created previously
+        await query(`
+            ALTER TABLE orders ADD COLUMN IF NOT EXISTS reference_photo TEXT;
+        `);
+        console.log('✅ Table "orders" verified/created (with reference_photo support).');
 
         // 4. Settings Table
         await query(`

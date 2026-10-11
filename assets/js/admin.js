@@ -860,6 +860,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
             });
 
+            const hasPhoto = !!o.referencePhoto;
+
             return `
                 <tr>
                     <td><strong>#${o.id.replace('ord_', '')}</strong></td>
@@ -871,6 +873,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="max-width: 240px; font-size: 0.85rem; color: var(--text-main); white-space: pre-line; max-height: 44px; overflow: hidden; text-overflow: ellipsis;">
                             ${escapeHtml(o.orderText || 'Direct checkout')}
                         </div>
+                        ${hasPhoto ? `
+                            <div style="margin-top: 0.35rem;">
+                                <span class="pill pill-success btn-photo-badge" data-id="${o.id}" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; padding: 0.2rem 0.55rem;" title="Click to view & download photo">
+                                    📸 Photo Attached · 📥 Download
+                                </span>
+                            </div>
+                        ` : ''}
                     </td>
                     <td><span class="pill pill-neutral">${escapeHtml(o.channel || 'Direct')}</span></td>
                     <td><strong>₹${o.total || 0}</strong></td>
@@ -885,6 +894,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td style="color: var(--text-light); font-size: 0.82rem;">${dateStr}</td>
                     <td>
                         <div class="row-actions">
+                            ${hasPhoto ? `
+                                <button class="btn-icon-action btn-quick-download-photo" data-id="${o.id}" title="Download Reference Photo">
+                                    📥
+                                </button>
+                            ` : ''}
                             <button class="btn-icon-action btn-view-order" data-id="${o.id}" title="View Order Details">
                                 👁️
                             </button>
@@ -896,6 +910,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
+
+        // Helper to trigger photo download
+        function downloadOrderReferencePhoto(order) {
+            if (!order || !order.referencePhoto) {
+                showToast('No reference photo attached to this order.', 'warning');
+                return;
+            }
+            const a = document.createElement('a');
+            a.href = order.referencePhoto;
+            const cleanId = order.id.replace('ord_', '');
+            a.download = `crustora_order_${cleanId}_inspiration.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast(`📥 Reference photo for Order #${cleanId} downloaded!`, 'success');
+        }
+
+        // Quick download buttons from table row
+        ordersTableBody.querySelectorAll('.btn-quick-download-photo').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                const order = await db.getOrder(id);
+                if (order) downloadOrderReferencePhoto(order);
+            });
+        });
+
+        // Photo badge click in table row
+        ordersTableBody.querySelectorAll('.btn-photo-badge').forEach(badge => {
+            badge.addEventListener('click', async () => {
+                const id = badge.getAttribute('data-id');
+                const order = await db.getOrder(id);
+                if (order) openOrderDetailsModal(order);
+            });
+        });
 
         // Attach status change dropdowns
         ordersTableBody.querySelectorAll('.order-status-select').forEach(sel => {
@@ -937,6 +985,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function openOrderDetailsModal(order) {
         const dateStr = new Date(order.createdAt).toLocaleString('en-IN');
+        const hasPhoto = !!order.referencePhoto;
+
         orderDetailsContent.innerHTML = `
             <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--primary-border); padding-bottom: 0.75rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -951,6 +1001,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
 
+            ${hasPhoto ? `
+                <!-- Customer Reference Photo Card -->
+                <div class="order-ref-photo-card" style="margin-bottom: 1.25rem; background: #fff5f9; border: 1.5px solid rgba(244, 114, 182, 0.4); border-radius: var(--radius-md); padding: 1.15rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <span style="font-weight: 700; color: var(--accent-dark); font-size: 0.95rem;">📸 Customer Reference Photo / Inspiration</span>
+                        <span class="pill pill-success" style="font-size: 0.72rem;">Stored in System</span>
+                    </div>
+                    <div style="display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap;">
+                        <a href="${escapeHtml(order.referencePhoto)}" target="_blank" title="Click to view full image" style="display: block; width: 110px; height: 110px; border-radius: 10px; overflow: hidden; border: 2.5px solid #ffffff; box-shadow: 0 4px 14px rgba(219,39,119,0.18); flex-shrink: 0; background: #fff;">
+                            <img src="${escapeHtml(order.referencePhoto)}" alt="Inspiration Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                        </a>
+                        <div style="flex: 1; min-width: 190px;">
+                            <p style="font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.45;">
+                                The customer uploaded this reference photo with their custom order. You can download it directly to your device or view it in high resolution.
+                            </p>
+                            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                                <button type="button" class="btn-download-modal-photo" style="padding: 0.5rem 1rem; background: var(--accent-gradient); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(219,39,119,0.25);">
+                                    <span>📥 Download Reference Photo</span>
+                                </button>
+                                <button type="button" class="btn-open-full-photo" style="padding: 0.5rem 0.9rem; background: #fff; color: var(--text-main); border: 1px solid var(--primary-border); border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                    <span>🔍 View Full Size</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+
             <div style="margin-bottom: 1rem;">
                 <h5 style="margin-bottom: 0.5rem; color: var(--text-main); font-size: 0.95rem;">Order Text / Items:</h5>
                 <pre style="background: #fff4f8; padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-body); white-space: pre-wrap; font-size: 0.9rem; border: 1px solid var(--primary-border); color: var(--text-main);">${escapeHtml(order.orderText || 'No detailed text recorded.')}</pre>
@@ -961,6 +1039,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <strong style="font-size: 1.25rem; color: var(--accent-dark);">₹${order.total || 0}</strong>
             </div>
         `;
+
+        if (hasPhoto) {
+            const dlBtn = orderDetailsContent.querySelector('.btn-download-modal-photo');
+            const viewBtn = orderDetailsContent.querySelector('.btn-open-full-photo');
+
+            if (dlBtn) {
+                dlBtn.addEventListener('click', () => {
+                    const a = document.createElement('a');
+                    a.href = order.referencePhoto;
+                    const cleanId = order.id.replace('ord_', '');
+                    a.download = `crustora_order_${cleanId}_inspiration.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    showToast(`📥 Reference photo for Order #${cleanId} downloaded!`, 'success');
+                });
+            }
+
+            if (viewBtn) {
+                viewBtn.addEventListener('click', () => {
+                    window.open(order.referencePhoto, '_blank');
+                });
+            }
+        }
+
         orderDetailsModal.classList.add('open');
     }
 

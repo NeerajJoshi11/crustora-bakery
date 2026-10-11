@@ -1221,19 +1221,70 @@ function initCustomizeStudio() {
         });
     }
 
-    function handleFile(file) {
+    function compressCustomPhoto(file) {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type.startsWith('image/')) {
+                return reject(new Error('Please select an image file'));
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_DIM = 960;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_DIM || height > MAX_DIM) {
+                        if (width > height) {
+                            height = Math.round((height * MAX_DIM) / width);
+                            width = MAX_DIM;
+                        } else {
+                            width = Math.round((width * MAX_DIM) / height);
+                            height = MAX_DIM;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    let dataUrl = canvas.toDataURL('image/webp', 0.84);
+                    if (!dataUrl || dataUrl.indexOf('data:image/webp') !== 0) {
+                        dataUrl = canvas.toDataURL('image/jpeg', 0.84);
+                    }
+                    resolve({ dataUrl, name: file.name });
+                };
+                img.onerror = () => reject(new Error('Failed to load image'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Failed to read image file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handleFile(file) {
         if (!file) return;
         if (!file.type.startsWith('image/')) {
             showToast('Please upload an image file (PNG, JPG, WebP)', 'error');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            displayPhoto(e.target.result, file.name, false);
-            showToast(`📸 Photo "${file.name}" attached!`, 'success');
-        };
-        reader.readAsDataURL(file);
+        try {
+            showToast('Optimizing photo for order...', 'info');
+            const { dataUrl, name } = await compressCustomPhoto(file);
+            displayPhoto(dataUrl, name, false);
+            showToast(`📸 Photo "${name}" attached & saved!`, 'success');
+        } catch (err) {
+            console.error('Photo optimization error:', err);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                displayPhoto(e.target.result, file.name, false);
+                showToast(`📸 Photo "${file.name}" attached!`, 'success');
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
     if (dropzone && photoInput) {
@@ -1327,37 +1378,45 @@ function initCustomizeStudio() {
             categoryDetails = `*Aroma / Fragrance:* ${scent}\n*Quantity & Style:* ${qty}`;
         }
 
-        const photoStatus = currentPhoto
-            ? (currentPhoto.isPreset ? `Sample inspiration selected (${currentPhoto.name}) 📸 (Attaching photo in chat)` : `Reference photo uploaded: ${currentPhoto.name} 📸 (Attaching photo in chat)`)
+        const orderId = `ord_${Date.now()}`;
+        const shortId = orderId.replace('ord_', '');
+
+        const photoRefNote = currentPhoto
+            ? (currentPhoto.isPreset
+                ? `Sample inspiration: "${currentPhoto.name}" (Stored in Crustora Order #${shortId}) 📸`
+                : `Attached & Saved in Crustora Order #${shortId} (Baker can view & download in Admin) 📸`)
             : 'None (text description only)';
 
         // Format clean WhatsApp message
         let wspMsg = `Hi Crustora! 🌸 I would like to place a custom inquiry:\n\n`;
         wspMsg += `✨ *${categoryTitle.toUpperCase()}* ✨\n`;
+        wspMsg += `🆔 *Order Reference ID:* #${shortId}\n`;
         wspMsg += `👤 *Customer Name:* ${customerName}\n`;
         wspMsg += `🎉 *Occasion:* ${occasion}\n`;
         wspMsg += `📅 *Needed By:* ${neededDate}\n`;
         wspMsg += `${categoryDetails}\n`;
         if (lettering) wspMsg += `✍️ *Custom Lettering/Card:* "${lettering}"\n`;
         if (notes) wspMsg += `📝 *Special Requests/Dietary:* ${notes}\n`;
-        wspMsg += `📸 *Reference Photo:* ${photoStatus}\n\n`;
+        wspMsg += `📸 *Reference Photo:* ${photoRefNote}\n\n`;
         wspMsg += `Please let me know the availability, pricing, and next steps! 💕`;
 
-        // Save order in database
+        // Save order in database with referencePhoto attached!
         try {
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = `<span>Preparing Custom Order... ✨</span>`;
+                submitBtn.innerHTML = `<span>Saving Order & Reference Photo... ✨</span>`;
             }
 
             await db.addOrder({
+                id: orderId,
                 customerEmail: 'custom@crustora.com',
                 customerName: customerName,
                 orderText: wspMsg,
                 items: [{ name: `${categoryTitle} (${occasion})`, price: 0, qty: 1 }],
                 total: 0,
                 status: 'Pending',
-                channel: 'WhatsApp'
+                channel: 'WhatsApp',
+                referencePhoto: currentPhoto ? currentPhoto.dataUrl : null
             });
         } catch (err) {
             console.error('Error saving custom order:', err);
@@ -1376,7 +1435,7 @@ function initCustomizeStudio() {
             triggerSweetBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
         }
 
-        showToast('🌸 Custom order details prepared! Redirecting to WhatsApp...', 'success');
+        showToast('🌸 Custom order & photo stored! Opening WhatsApp...', 'success');
 
         const phone = "919891775379";
         const url = `https://wa.me/${phone}?text=${encodeURIComponent(wspMsg)}`;

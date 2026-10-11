@@ -300,7 +300,8 @@ export async function handleApiRequest(req, res) {
         if (pathname === '/api/orders' && method === 'GET') {
             const result = await query(`
                 SELECT id, customer_email as "customerEmail", customer_name as "customerName",
-                       order_text as "orderText", items, total, status, channel, created_at as "createdAt"
+                       order_text as "orderText", items, total, status, channel,
+                       reference_photo as "referencePhoto", created_at as "createdAt"
                 FROM orders
                 ORDER BY created_at DESC;
             `);
@@ -310,11 +311,13 @@ export async function handleApiRequest(req, res) {
         if (pathname === '/api/orders' && method === 'POST') {
             const body = await parseBody(req);
             const id = body.id || `ord_${Date.now()}`;
+            const refPhoto = body.referencePhoto || body.reference_photo || null;
             const result = await query(`
-                INSERT INTO orders (id, customer_email, customer_name, order_text, items, total, status, channel, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                INSERT INTO orders (id, customer_email, customer_name, order_text, items, total, status, channel, reference_photo, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
                 RETURNING id, customer_email as "customerEmail", customer_name as "customerName",
-                          order_text as "orderText", items, total, status, channel, created_at as "createdAt";
+                          order_text as "orderText", items, total, status, channel,
+                          reference_photo as "referencePhoto", created_at as "createdAt";
             `, [
                 id,
                 body.customerEmail || 'guest@crustora.com',
@@ -323,7 +326,8 @@ export async function handleApiRequest(req, res) {
                 JSON.stringify(body.items || []),
                 Number(body.total) || 0,
                 body.status || 'Pending',
-                body.channel || 'WhatsApp'
+                body.channel || 'WhatsApp',
+                refPhoto
             ]);
             return sendJson(res, 201, result.rows[0]);
         }
@@ -336,7 +340,8 @@ export async function handleApiRequest(req, res) {
                 SET status = $1
                 WHERE id = $2
                 RETURNING id, customer_email as "customerEmail", customer_name as "customerName",
-                          order_text as "orderText", items, total, status, channel, created_at as "createdAt";
+                          order_text as "orderText", items, total, status, channel,
+                          reference_photo as "referencePhoto", created_at as "createdAt";
             `, [body.status, id]);
             if (result.rows.length === 0) return sendJson(res, 404, { error: 'Order not found' });
             return sendJson(res, 200, result.rows[0]);
@@ -382,7 +387,7 @@ export async function handleApiRequest(req, res) {
             const [items, users, orders, settings] = await Promise.all([
                 query(`SELECT id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable" FROM menu_items`),
                 query(`SELECT id, name, email, role, status, created_at as "createdAt" FROM users`),
-                query(`SELECT id, customer_email as "customerEmail", customer_name as "customerName", order_text as "orderText", items, total, status, channel, created_at as "createdAt" FROM orders`),
+                query(`SELECT id, customer_email as "customerEmail", customer_name as "customerName", order_text as "orderText", items, total, status, channel, reference_photo as "referencePhoto", created_at as "createdAt" FROM orders`),
                 query(`SELECT value FROM settings WHERE key = 'config'`)
             ]);
             const dump = {
