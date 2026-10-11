@@ -640,6 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initReviewsSlider();
     initScrollTopBtn();
     initCardTilt();
+    initCustomizeStudio();
 
     // Update cart UI from local storage
     updateCartCount();
@@ -1147,4 +1148,253 @@ if (qvWaDirectBtn) {
         window.open(url, '_blank');
     });
 }
+
+// =========================================================
+// Custom Creation Studio (Bespoke Cakes, Hampers, Candles)
+// =========================================================
+function initCustomizeStudio() {
+    const form = document.getElementById('customOrderForm');
+    if (!form) return;
+
+    const catTabs = document.querySelectorAll('.custom-cat-tab');
+    const dynamicFieldsCakes = document.getElementById('dynamicFieldsCakes');
+    const dynamicFieldsHampers = document.getElementById('dynamicFieldsHampers');
+    const dynamicFieldsCandles = document.getElementById('dynamicFieldsCandles');
+
+    const dropzone = document.getElementById('customDropzone');
+    const photoInput = document.getElementById('customPhotoInput');
+    const dropzoneEmpty = document.getElementById('customDropzoneEmpty');
+    const previewFrame = document.getElementById('customPreviewFrame');
+    const previewImg = document.getElementById('customPreviewImg');
+    const previewName = document.getElementById('customPreviewName');
+    const btnRemovePhoto = document.getElementById('btnRemoveCustomPhoto');
+    const sampleChips = document.getElementById('sampleInspirationChips');
+    const submitBtn = document.getElementById('btnSubmitCustomOrder');
+
+    let currentCat = 'cakes';
+    let currentPhoto = null; // { dataUrl: string, name: string, isPreset: boolean }
+
+    // 1. Tab Switching
+    function setCategory(cat) {
+        currentCat = cat;
+        catTabs.forEach(tab => {
+            const isActive = tab.getAttribute('data-custom-cat') === cat;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        if (dynamicFieldsCakes) dynamicFieldsCakes.style.display = cat === 'cakes' ? 'block' : 'none';
+        if (dynamicFieldsHampers) dynamicFieldsHampers.style.display = cat === 'hampers' ? 'block' : 'none';
+        if (dynamicFieldsCandles) dynamicFieldsCandles.style.display = cat === 'candles' ? 'block' : 'none';
+    }
+
+    catTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const cat = tab.getAttribute('data-custom-cat');
+            if (cat) setCategory(cat);
+        });
+    });
+
+    // 2. Photo Display & Management
+    function displayPhoto(src, name, isPreset = false) {
+        if (!previewImg || !previewName || !dropzoneEmpty || !previewFrame) return;
+        previewImg.src = src;
+        previewName.textContent = name || 'reference_photo.jpg';
+        dropzoneEmpty.style.display = 'none';
+        previewFrame.style.display = 'flex';
+        currentPhoto = { dataUrl: src, name: name, isPreset };
+    }
+
+    function removePhoto() {
+        currentPhoto = null;
+        if (photoInput) photoInput.value = '';
+        if (previewImg) previewImg.src = '';
+        if (previewFrame) previewFrame.style.display = 'none';
+        if (dropzoneEmpty) dropzoneEmpty.style.display = 'flex';
+    }
+
+    if (btnRemovePhoto) {
+        btnRemovePhoto.addEventListener('click', (e) => {
+            e.stopPropagation();
+            removePhoto();
+            showToast('Reference photo removed', 'info');
+        });
+    }
+
+    function handleFile(file) {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showToast('Please upload an image file (PNG, JPG, WebP)', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            displayPhoto(e.target.result, file.name, false);
+            showToast(`📸 Photo "${file.name}" attached!`, 'success');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (dropzone && photoInput) {
+        dropzone.addEventListener('click', (e) => {
+            if (e.target.closest('#btnRemoveCustomPhoto')) return;
+            photoInput.click();
+        });
+
+        dropzone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                photoInput.click();
+            }
+        });
+
+        photoInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Drag and Drop
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files[0]) {
+                handleFile(dt.files[0]);
+            }
+        });
+    }
+
+    // 3. Sample Inspiration Presets
+    if (sampleChips) {
+        sampleChips.addEventListener('click', (e) => {
+            const chip = e.target.closest('.sample-chip');
+            if (!chip) return;
+            const imgSrc = chip.getAttribute('data-img');
+            const cat = chip.getAttribute('data-cat');
+            const chipText = chip.textContent.trim();
+
+            if (cat) setCategory(cat);
+            if (imgSrc) {
+                displayPhoto(imgSrc, chipText, true);
+                showToast(`✨ Inspiration applied: ${chipText}`, 'success');
+            }
+        });
+    }
+
+    // 4. Form Submit & WhatsApp Order Redirection
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const occasion = document.getElementById('customOccasion')?.value || 'Celebration';
+        const neededDate = document.getElementById('customDate')?.value || 'Flexible';
+        const lettering = document.getElementById('customLettering')?.value.trim();
+        const notes = document.getElementById('customNotes')?.value.trim();
+        const customerName = document.getElementById('customCustomerName')?.value.trim() || 'Sweet Customer';
+
+        let categoryTitle = 'Custom Cake';
+        let categoryDetails = '';
+
+        if (currentCat === 'cakes') {
+            categoryTitle = 'Custom Designer Cake';
+            const flavor = document.getElementById('customCakeFlavor')?.value || 'Belgian Chocolate Truffle';
+            const size = document.getElementById('customCakeSize')?.value || 'Half Kg';
+            categoryDetails = `*Flavor:* ${flavor}\n*Size / Weight:* ${size}`;
+        } else if (currentCat === 'hampers') {
+            categoryTitle = 'Luxury Curated Hamper';
+            const hamperType = document.getElementById('customHamperType')?.value || 'Grand Royal';
+            const budget = document.getElementById('customHamperBudget')?.value || '₹800 - ₹1,200';
+            categoryDetails = `*Hamper Combination:* ${hamperType}\n*Target Budget:* ${budget}`;
+        } else if (currentCat === 'candles') {
+            categoryTitle = 'Aesthetic Scented Candle Set';
+            const scent = document.getElementById('customCandleScent')?.value || 'Vanilla Lavender Calm';
+            const qty = document.getElementById('customCandleQty')?.value || 'Single Luxury Pastel Jar';
+            categoryDetails = `*Aroma / Fragrance:* ${scent}\n*Quantity & Style:* ${qty}`;
+        }
+
+        const photoStatus = currentPhoto
+            ? (currentPhoto.isPreset ? `Sample inspiration selected (${currentPhoto.name}) 📸 (Attaching photo in chat)` : `Reference photo uploaded: ${currentPhoto.name} 📸 (Attaching photo in chat)`)
+            : 'None (text description only)';
+
+        // Format clean WhatsApp message
+        let wspMsg = `Hi Crustora! 🌸 I would like to place a custom inquiry:\n\n`;
+        wspMsg += `✨ *${categoryTitle.toUpperCase()}* ✨\n`;
+        wspMsg += `👤 *Customer Name:* ${customerName}\n`;
+        wspMsg += `🎉 *Occasion:* ${occasion}\n`;
+        wspMsg += `📅 *Needed By:* ${neededDate}\n`;
+        wspMsg += `${categoryDetails}\n`;
+        if (lettering) wspMsg += `✍️ *Custom Lettering/Card:* "${lettering}"\n`;
+        if (notes) wspMsg += `📝 *Special Requests/Dietary:* ${notes}\n`;
+        wspMsg += `📸 *Reference Photo:* ${photoStatus}\n\n`;
+        wspMsg += `Please let me know the availability, pricing, and next steps! 💕`;
+
+        // Save order in database
+        try {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span>Preparing Custom Order... ✨</span>`;
+            }
+
+            await db.addOrder({
+                customerEmail: 'custom@crustora.com',
+                customerName: customerName,
+                orderText: wspMsg,
+                items: [{ name: `${categoryTitle} (${occasion})`, price: 0, qty: 1 }],
+                total: 0,
+                status: 'Pending',
+                channel: 'WhatsApp'
+            });
+        } catch (err) {
+            console.error('Error saving custom order:', err);
+        }
+
+        // Copy order text to clipboard
+        try {
+            await navigator.clipboard.writeText(wspMsg);
+        } catch (cErr) {
+            console.warn('Clipboard write warning:', cErr);
+        }
+
+        // Trigger sweet celebration burst
+        if (submitBtn) {
+            const rect = submitBtn.getBoundingClientRect();
+            triggerSweetBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+
+        showToast('🌸 Custom order details prepared! Redirecting to WhatsApp...', 'success');
+
+        const phone = "919891775379";
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(wspMsg)}`;
+
+        setTimeout(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                    </svg>
+                    <span>Order Custom Creation on WhatsApp</span>
+                `;
+            }
+            window.open(url, '_blank');
+        }, 600);
+    });
+}
+
 

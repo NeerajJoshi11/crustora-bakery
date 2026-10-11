@@ -23,6 +23,7 @@
         <ul class="nav-links">
             <li><a href="index.html#home" class="nav-item">Home</a></li>
             <li><a href="index.html#menu" class="nav-item">Menu</a></li>
+            <li><a href="index.html#customize" class="nav-item">Customize ✨</a></li>
             <li><a href="index.html#reviews" class="nav-item">Reviews</a></li>
         </ul>
         <div class="nav-actions">
@@ -186,6 +187,213 @@
 
         <div class="product-grid" id="productGrid">
             <!-- Items injected via JS -->
+        </div>
+    </section>
+
+    <!-- ==========================================
+         Custom Creation Studio Section (Cakes, Hampers, Candles)
+         ========================================== -->
+    <section id="customize" class="customize-section">
+        <div class="section-header fade-in">
+            <span class="section-eyebrow">✦ BESPOKE CREATIONS ✦</span>
+            <h2>Custom Creation Studio</h2>
+            <p>Upload a photo of your dream cake, custom hamper, or candle inspiration and order directly via WhatsApp!</p>
+        </div>
+
+        <div class="customize-container fade-in-up">
+            <!-- Category Tabs (Cakes, Hampers, Candles) -->
+            <div class="custom-category-tabs" role="tablist">
+                <button type="button" class="custom-cat-tab active" data-custom-cat="cakes" role="tab" aria-selected="true">
+                    <span class="tab-icon">🎂</span>
+                    <span class="tab-text">Custom Cakes</span>
+                </button>
+                <button type="button" class="custom-cat-tab" data-custom-cat="hampers" role="tab" aria-selected="false">
+                    <span class="tab-icon">🎁</span>
+                    <span class="tab-text">Luxury Hampers</span>
+                </button>
+                <button type="button" class="custom-cat-tab" data-custom-cat="candles" role="tab" aria-selected="false">
+                    <span class="tab-icon">🕯️</span>
+                    <span class="tab-text">Aesthetic Candles</span>
+                </button>
+            </div>
+
+            <form id="customOrderForm" class="customize-card">
+                <div class="customize-grid">
+                    <!-- Left Column: Reference Photo Upload & Live Polaroid Frame -->
+                    <div class="customize-photo-col">
+                        <div class="upload-inspiration-header">
+                            <label class="custom-field-label">Reference / Inspiration Photo</label>
+                            <span class="upload-badge-pill">📸 Recommended</span>
+                        </div>
+                        <p class="custom-field-hint">
+                            Upload an image from Pinterest, Instagram, or your phone for our baker to recreate!
+                        </p>
+
+                        <!-- Inspiration Dropzone -->
+                        <div class="custom-dropzone" id="customDropzone" tabindex="0" role="button" aria-label="Upload reference photo">
+                            <input type="file" id="customPhotoInput" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                            
+                            <!-- Empty State -->
+                            <div class="custom-dropzone-empty" id="customDropzoneEmpty">
+                                <div class="custom-dropzone-icon">✨📸✨</div>
+                                <div class="custom-dropzone-title"><strong>Click to upload photo</strong> or drag & drop here</div>
+                                <span class="custom-dropzone-sub">PNG, JPG, or WebP · Auto-optimized for web</span>
+                            </div>
+
+                            <!-- Uploaded Polaroid Preview Frame -->
+                            <div class="custom-preview-frame" id="customPreviewFrame" style="display: none;">
+                                <div class="polaroid-wrapper">
+                                    <img id="customPreviewImg" src="" alt="Reference Photo Preview" class="polaroid-img">
+                                    <div class="polaroid-caption">
+                                        <span id="customPreviewName">reference_photo.jpg</span>
+                                        <span class="polaroid-badge">Inspiration Attached ✨</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove-custom-photo" id="btnRemoveCustomPhoto" title="Change or remove photo">✕ Remove Photo</button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Sample Inspiration Presets -->
+                        <div class="sample-inspiration-row">
+                            <span class="sample-label">Or try sample inspiration:</span>
+                            <div class="sample-chips" id="sampleInspirationChips">
+                                <button type="button" class="sample-chip" data-img="assets/images/custom_bento_cake.jpg" data-cat="cakes">🎂 Pastel Bento</button>
+                                <button type="button" class="sample-chip" data-img="assets/images/sana_gappu_sher.jpg" data-cat="cakes">✍️ Custom Lettering</button>
+                                <button type="button" class="sample-chip" data-img="assets/images/gift_hamper_1775410716144.png" data-cat="hampers">🎁 Celebration Hamper</button>
+                                <button type="button" class="sample-chip" data-img="assets/images/scented_candles_1775410699647.png" data-cat="candles">🕯️ Pastel Jar Candle</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Bespoke Customization Controls -->
+                    <div class="customize-details-col">
+                        <div class="form-row-2">
+                            <div class="custom-form-group">
+                                <label for="customOccasion" class="custom-field-label">Occasion / Event *</label>
+                                <select id="customOccasion" class="custom-select" required>
+                                    <option value="Birthday Celebration">🎂 Birthday Celebration</option>
+                                    <option value="Anniversary / Romance">💖 Anniversary / Romance</option>
+                                    <option value="Friendship / Appreciation">🌸 Friendship / Thank You</option>
+                                    <option value="Festival / Special Event">🎉 Festival / Holiday Party</option>
+                                    <option value="Self-Love / Sweet Cravings">✨ Self-Love / Sweet Cravings</option>
+                                    <option value="Corporate / Bulk Gifting">🏢 Corporate / Bulk Gifting</option>
+                                </select>
+                            </div>
+                            <div class="custom-form-group">
+                                <label for="customDate" class="custom-field-label">Needed By (Date & Time) *</label>
+                                <input type="text" id="customDate" class="custom-input" placeholder="e.g. Tomorrow 5 PM or Oct 15" required>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Section 1: Cakes Options -->
+                        <div id="dynamicFieldsCakes" class="dynamic-category-fields">
+                            <div class="form-row-2">
+                                <div class="custom-form-group">
+                                    <label for="customCakeFlavor" class="custom-field-label">Cake Flavor *</label>
+                                    <select id="customCakeFlavor" class="custom-select">
+                                        <option value="Belgian Chocolate Ganache">🍫 Belgian Chocolate Ganache</option>
+                                        <option value="Classic Chocolate Truffle">🎂 Chocolate Truffle</option>
+                                        <option value="Healthy Atta (100% Whole Wheat, Eggless)">🌾 100% Atta / Whole Wheat (Eggless)</option>
+                                        <option value="Fresh Strawberry Cream">🍓 Fresh Strawberry Vanilla</option>
+                                        <option value="Red Velvet Cream Cheese">🌹 Red Velvet Cream Cheese</option>
+                                        <option value="Butterscotch Caramel Crunch">🍯 Butterscotch Caramel Crunch</option>
+                                    </select>
+                                </div>
+                                <div class="custom-form-group">
+                                    <label for="customCakeSize" class="custom-field-label">Size / Weight *</label>
+                                    <select id="customCakeSize" class="custom-select">
+                                        <option value="Bento Cake (250g, 1-2 people)">Cute Bento Cake (~250g, 1-2 people)</option>
+                                        <option value="Half Kg (500g, 4-6 people)">Standard ½ kg (4-6 people)</option>
+                                        <option value="One Kg (1kg, 8-12 people)">Celebration 1 kg (8-12 people)</option>
+                                        <option value="Custom Cupcakes Pack (4 or 6)">Pastel Cupcakes Box</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Section 2: Hampers Options -->
+                        <div id="dynamicFieldsHampers" class="dynamic-category-fields" style="display: none;">
+                            <div class="form-row-2">
+                                <div class="custom-form-group">
+                                    <label for="customHamperType" class="custom-field-label">Hamper Combination *</label>
+                                    <select id="customHamperType" class="custom-select">
+                                        <option value="Grand Royal (Bento Cake + 4 Brownies + Chocolates + Candle)">👑 Grand Royal (Bento + Brownies + Chocolates + Candle)</option>
+                                        <option value="Sweet Duo (Bento Cake + Scented Candle)">🎂 Sweet Duo (Bento Cake + Soy Candle)</option>
+                                        <option value="Choco Lovers (Fudge Brownies + Assorted Chocolates)">🍫 Choco Lovers (Brownies + Chocolates Box)</option>
+                                        <option value="Custom Curated Hamper">🎀 Fully Customised Curation</option>
+                                    </select>
+                                </div>
+                                <div class="custom-form-group">
+                                    <label for="customHamperBudget" class="custom-field-label">Target Budget *</label>
+                                    <select id="customHamperBudget" class="custom-select">
+                                        <option value="₹500 - ₹800">₹500 – ₹800</option>
+                                        <option value="₹800 - ₹1,200">₹800 – ₹1,200 (Most Popular)</option>
+                                        <option value="₹1,200 - ₹2,000">₹1,200 – ₹2,000 (Luxury)</option>
+                                        <option value="Above ₹2,000">Above ₹2,000 (Premium)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Section 3: Candles Options -->
+                        <div id="dynamicFieldsCandles" class="dynamic-category-fields" style="display: none;">
+                            <div class="form-row-2">
+                                <div class="custom-form-group">
+                                    <label for="customCandleScent" class="custom-field-label">Aroma / Fragrance *</label>
+                                    <select id="customCandleScent" class="custom-select">
+                                        <option value="Vanilla Lavender Calm">🌿 Vanilla Lavender Calm</option>
+                                        <option value="French Rose Petals">🌹 French Rose Petals</option>
+                                        <option value="Midnight Jasmine Bloom">🌸 Midnight Jasmine Bloom</option>
+                                        <option value="Warm Cinnamon Apple">🍎 Warm Cinnamon Apple</option>
+                                        <option value="Unscented Pure Soy Wax">🕯️ Unscented Decorative</option>
+                                    </select>
+                                </div>
+                                <div class="custom-form-group">
+                                    <label for="customCandleQty" class="custom-field-label">Quantity / Style *</label>
+                                    <select id="customCandleQty" class="custom-select">
+                                        <option value="Single Luxury Pastel Glass Jar (200g)">Single Luxury Pastel Jar (200g)</option>
+                                        <option value="Set of 2 Gift Jar Candles">Set of 2 Gift Jar Candles</option>
+                                        <option value="Set of 4 Floral Decorative Shapes">Set of 4 Floral Decorative Shapes</option>
+                                        <option value="Bulk Event Favors (10+ Units)">Bulk Event Favors (10+ units)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Lettering / Message -->
+                        <div class="custom-form-group">
+                            <label for="customLettering" class="custom-field-label">Custom Message / Cake Lettering</label>
+                            <input type="text" id="customLettering" class="custom-input" placeholder="e.g. Happy 21st Birthday Diya! 🌸 or custom card note">
+                        </div>
+
+                        <!-- Specific Instructions / Dietary / Color Theme -->
+                        <div class="custom-form-group">
+                            <label for="customNotes" class="custom-field-label">Special Notes & Design Requests</label>
+                            <textarea id="customNotes" class="custom-textarea" rows="2" placeholder="Tell us about colors, specific decor elements, eggless preference, or reference instructions..."></textarea>
+                        </div>
+
+                        <!-- Customer Name -->
+                        <div class="custom-form-group">
+                            <label for="customCustomerName" class="custom-field-label">Your Name</label>
+                            <input type="text" id="customCustomerName" class="custom-input" placeholder="e.g. Sneha">
+                        </div>
+
+                        <!-- Submit to WhatsApp Button -->
+                        <div class="custom-action-row">
+                            <button type="submit" class="btn-whatsapp-custom-order" id="btnSubmitCustomOrder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                </svg>
+                                <span>Order Custom Creation on WhatsApp</span>
+                            </button>
+                            <p class="custom-wsp-hint">
+                                💬 Tapping pre-fills all your design details directly in our WhatsApp chat. If you selected a reference photo, please attach it in the chat!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </section>
 

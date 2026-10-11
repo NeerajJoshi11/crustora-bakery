@@ -2348,3 +2348,407 @@ footer .logo img {
     }
 }
 
+/* =========================================================
+   Custom Creation Studio (Bespoke Cakes, Hampers, Candles)
+   ========================================================= */
+.customize-section {
+    padding: 5rem 6%;
+    background: linear-gradient(180deg, #ffffff 0%, #fff7fa 40%, #ffffff 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.customize-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Category Tabs */
+.custom-category-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.85rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.custom-cat-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.6rem;
+    background: #ffffff;
+    border: 1.5px solid rgba(244, 114, 182, 0.35);
+    border-radius: var(--radius-full);
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.96rem;
+    cursor: pointer;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(45, 24, 34, 0.03);
+}
+
+.custom-cat-tab .tab-icon {
+    font-size: 1.25rem;
+    transition: transform 0.25s ease;
+}
+
+.custom-cat-tab:hover {
+    border-color: var(--accent-dark);
+    color: var(--accent-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(219, 39, 119, 0.12);
+}
+
+.custom-cat-tab:hover .tab-icon {
+    transform: scale(1.2) rotate(6deg);
+}
+
+.custom-cat-tab.active {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 6px 22px var(--accent-glow);
+    transform: translateY(-2px);
+}
+
+/* Card Container */
+.customize-card {
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 2.5rem;
+    border: 1.5px solid rgba(244, 114, 182, 0.28);
+    box-shadow: 0 16px 45px rgba(219, 39, 119, 0.08);
+    position: relative;
+}
+
+.customize-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+/* Left Photo Column */
+.customize-photo-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-inspiration-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+}
+
+.custom-field-label {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.upload-badge-pill {
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+    color: var(--accent-dark);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(219, 39, 119, 0.2);
+}
+
+.custom-field-hint {
+    font-size: 0.82rem;
+    color: var(--text-light);
+    margin-bottom: 0.85rem;
+    line-height: 1.45;
+}
+
+/* Dropzone */
+.custom-dropzone {
+    border: 2px dashed rgba(219, 39, 119, 0.38);
+    background: linear-gradient(180deg, #fffbfd 0%, #fff6fa 100%);
+    border-radius: 20px;
+    padding: 1.75rem 1.25rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.28s ease;
+    position: relative;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-dropzone:hover,
+.custom-dropzone.dragover {
+    border-color: var(--accent-dark);
+    background: #fdf2f8;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(219, 39, 119, 0.15);
+}
+
+.custom-dropzone-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.6rem;
+    animation: pulseIcon 2.8s ease-in-out infinite;
+}
+
+@keyframes pulseIcon {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.custom-dropzone-title {
+    font-size: 0.96rem;
+    color: var(--text-main);
+    margin-bottom: 0.3rem;
+}
+
+.custom-dropzone-title strong {
+    color: var(--accent-dark);
+}
+
+.custom-dropzone-sub {
+    font-size: 0.76rem;
+    color: var(--text-light);
+}
+
+/* Polaroid Preview Frame */
+.custom-preview-frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.polaroid-wrapper {
+    background: #ffffff;
+    padding: 0.75rem 0.75rem 1rem;
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(244, 114, 182, 0.25);
+    width: 100%;
+    max-width: 290px;
+    transform: rotate(-1.5deg);
+    transition: transform 0.3s ease;
+}
+
+.polaroid-wrapper:hover {
+    transform: rotate(0deg) scale(1.02);
+}
+
+.polaroid-img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #fff1f6;
+    display: block;
+}
+
+.polaroid-caption {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.polaroid-caption span#customPreviewName {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-main);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.polaroid-badge {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+}
+
+.btn-remove-custom-photo {
+    margin-top: 0.85rem;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #ef4444;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-custom-photo:hover {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+/* Sample chips */
+.sample-inspiration-row {
+    margin-top: 1.15rem;
+}
+
+.sample-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 0.4rem;
+}
+
+.sample-chips {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+.sample-chip {
+    padding: 0.35rem 0.75rem;
+    background: #ffffff;
+    border: 1px solid rgba(244, 114, 182, 0.35);
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sample-chip:hover {
+    background: #fdf2f8;
+    color: var(--accent-dark);
+    border-color: var(--accent-dark);
+    transform: translateY(-1px);
+}
+
+/* Right Details Column */
+.customize-details-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.custom-form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.custom-input,
+.custom-select,
+.custom-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--primary-border);
+    background: #ffffff;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.22s ease;
+}
+
+.custom-input:focus,
+.custom-select:focus,
+.custom-textarea:focus {
+    border-color: var(--accent-dark);
+    box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.12);
+    background: #fff;
+}
+
+.custom-textarea {
+    resize: vertical;
+    min-height: 65px;
+}
+
+.dynamic-category-fields {
+    animation: fadeInFast 0.25s ease;
+}
+
+@keyframes fadeInFast {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* WhatsApp Submit Action */
+.custom-action-row {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.btn-whatsapp-custom-order {
+    width: 100%;
+    padding: 1rem 1.8rem;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+    color: #ffffff;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 6px 22px rgba(37, 211, 102, 0.35);
+}
+
+.btn-whatsapp-custom-order:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(37, 211, 102, 0.45);
+    background: linear-gradient(135deg, #2ae06e 0%, #159a8b 100%);
+}
+
+.btn-whatsapp-custom-order svg {
+    transition: transform 0.22s ease;
+}
+
+.btn-whatsapp-custom-order:hover svg {
+    transform: scale(1.15) rotate(8deg);
+}
+
+.custom-wsp-hint {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    line-height: 1.45;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .customize-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    .customize-card {
+        padding: 1.75rem;
+    }
+    .form-row-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+
