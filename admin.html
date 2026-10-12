@@ -51,10 +51,6 @@
                     </svg>
                 </button>
             </form>
-
-            <div class="pin-hint">
-                💡 Default Master PIN: <strong>admin123</strong>
-            </div>
         </div>
     </div>
 
@@ -562,9 +558,100 @@
         </div>
     </div>
 
-
-
     <!-- ==========================================
+         MODAL: Crop & Image Adjustment Tool
+         ========================================== -->
+    <div id="imageCropModal" class="modal-overlay image-crop-overlay" style="z-index: 100005;">
+        <div class="modal-dialog crop-modal-dialog">
+            <div class="modal-header">
+                <div class="crop-header-title">
+                    <span class="crop-header-icon">✂️</span>
+                    <div>
+                        <h3>Adjust & Crop Product Photo</h3>
+                        <p class="crop-subtitle">Drag to reposition, zoom in/out, or rotate to frame your treat</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="closeCropModalBtn">&times;</button>
+            </div>
+            <div class="crop-modal-body">
+                <!-- Interactive Canvas Workspace -->
+                <div class="crop-workspace">
+                    <div class="crop-canvas-wrapper" id="cropCanvasWrapper">
+                        <canvas id="cropCanvas" width="460" height="380"></canvas>
+                        <div class="crop-grid-lines">
+                            <span class="grid-line horizontal h-1"></span>
+                            <span class="grid-line horizontal h-2"></span>
+                            <span class="grid-line vertical v-1"></span>
+                            <span class="grid-line vertical v-2"></span>
+                        </div>
+                    </div>
+                    <div class="crop-workspace-hint">
+                        <span>💡 Drag image to frame · Scroll or use slider to zoom</span>
+                    </div>
+                </div>
+
+                <!-- Controls Sidebar -->
+                <div class="crop-controls-sidebar">
+                    <!-- Aspect Ratio Presets -->
+                    <div class="crop-control-group">
+                        <label class="crop-control-label">Aspect Ratio</label>
+                        <div class="crop-ratio-tabs">
+                            <button type="button" class="crop-ratio-btn active" data-ratio="1:1">1:1 Square</button>
+                            <button type="button" class="crop-ratio-btn" data-ratio="4:3">4:3 Card</button>
+                            <button type="button" class="crop-ratio-btn" data-ratio="original">Original</button>
+                        </div>
+                    </div>
+
+                    <!-- Zoom Range Slider -->
+                    <div class="crop-control-group">
+                        <div class="crop-label-row">
+                            <label class="crop-control-label" for="cropZoomRange">Zoom & Scale</label>
+                            <span id="cropZoomValue" class="crop-badge-val">100%</span>
+                        </div>
+                        <div class="crop-slider-row">
+                            <button type="button" class="crop-tool-btn" id="btnZoomOut" title="Zoom Out">−</button>
+                            <input type="range" id="cropZoomRange" min="50" max="300" value="100" class="crop-range-slider">
+                            <button type="button" class="crop-tool-btn" id="btnZoomIn" title="Zoom In">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Rotation & Flip Tools -->
+                    <div class="crop-control-group">
+                        <label class="crop-control-label">Rotate & Align</label>
+                        <div class="crop-tools-row">
+                            <button type="button" class="crop-action-tool" id="btnCropRotateLeft" title="Rotate 90° Counter-Clockwise">
+                                <span>↺</span> -90°
+                            </button>
+                            <button type="button" class="crop-action-tool" id="btnCropRotateRight" title="Rotate 90° Clockwise">
+                                <span>↻</span> +90°
+                            </button>
+                            <button type="button" class="crop-action-tool" id="btnCropFlipH" title="Flip Horizontal">
+                                <span>⇄</span> Flip
+                            </button>
+                            <button type="button" class="crop-action-tool" id="btnCropReset" title="Reset View">
+                                <span>⟲</span> Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Mini Preview -->
+                    <div class="crop-control-group">
+                        <label class="crop-control-label">Catalog Preview (Live)</label>
+                        <div class="crop-preview-box">
+                            <canvas id="cropPreviewCanvas" width="120" height="120"></canvas>
+                            <span class="crop-preview-caption">As shown in catalog card</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer crop-modal-footer">
+                <button type="button" class="btn-modal-cancel" id="cancelCropBtn">Cancel</button>
+                <button type="button" class="btn-modal-submit" id="applyCropBtn">
+                    <span>✂️ Apply & Save Photo</span>
+                </button>
+            </div>
+        </div>
+    </div>
          MODAL: View Order Details
          ========================================== -->
     <div id="orderDetailsModal" class="modal-overlay">

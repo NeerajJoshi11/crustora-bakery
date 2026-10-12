@@ -252,17 +252,6 @@
                                 <button type="button" class="btn-remove-custom-photo" id="btnRemoveCustomPhoto" title="Change or remove photo">✕ Remove Photo</button>
                             </div>
                         </div>
-
-                        <!-- Quick Sample Inspiration Presets -->
-                        <div class="sample-inspiration-row">
-                            <span class="sample-label">Or try sample inspiration:</span>
-                            <div class="sample-chips" id="sampleInspirationChips">
-                                <button type="button" class="sample-chip" data-img="assets/images/custom_bento_cake.jpg" data-cat="cakes">🎂 Pastel Bento</button>
-                                <button type="button" class="sample-chip" data-img="assets/images/sana_gappu_sher.jpg" data-cat="cakes">✍️ Custom Lettering</button>
-                                <button type="button" class="sample-chip" data-img="assets/images/gift_hamper_1775410716144.png" data-cat="hampers">🎁 Celebration Hamper</button>
-                                <button type="button" class="sample-chip" data-img="assets/images/scented_candles_1775410699647.png" data-cat="candles">🕯️ Pastel Jar Candle</button>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Right Column: Bespoke Customization Controls -->
@@ -646,6 +635,33 @@
             </svg>
         </button>
     </div>
+
+    <!-- Mobile App-Style Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+        <a href="#home" class="mobile-nav-item active" id="mobNavHome">
+            <span class="mob-icon">🏠</span>
+            <span class="mob-label">Home</span>
+        </a>
+        <a href="#menu" class="mobile-nav-item" id="mobNavMenu">
+            <span class="mob-icon">🧁</span>
+            <span class="mob-label">Menu</span>
+        </a>
+        <a href="#customize" class="mobile-nav-item" id="mobNavCustomize">
+            <span class="mob-icon">✨</span>
+            <span class="mob-label">Studio</span>
+        </a>
+        <a href="#reviews" class="mobile-nav-item" id="mobNavReviews">
+            <span class="mob-icon">💖</span>
+            <span class="mob-label">Reviews</span>
+        </a>
+        <button type="button" class="mobile-nav-item mob-cart-trigger" id="mobNavCart" aria-label="View Shopping Cart">
+            <div class="mob-cart-badge-wrap">
+                <span class="mob-icon">🛍️</span>
+                <span class="mob-cart-count" id="mobCartCount">0</span>
+            </div>
+            <span class="mob-label">Cart</span>
+        </button>
+    </nav>
 
     <!-- Toast Notifications Container -->
     <div id="toast-container"></div>

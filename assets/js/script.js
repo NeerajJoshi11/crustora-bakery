@@ -25,18 +25,25 @@ const checkoutMsg = document.getElementById('checkoutMsg');
 const openCart = () => {
     cartOverlay.classList.add('open');
     cartModal.classList.add('open');
+    document.body.classList.add('cart-open');
     renderCart();
 };
 
 const closeCart = () => {
     cartOverlay.classList.remove('open');
     cartModal.classList.remove('open');
+    document.body.classList.remove('cart-open');
     checkoutMsg.style.display = 'none';
 };
 
 cartBtn.addEventListener('click', openCart);
 closeCartBtn.addEventListener('click', closeCart);
 cartOverlay.addEventListener('click', closeCart);
+
+const mobNavCart = document.getElementById('mobNavCart');
+if (mobNavCart) {
+    mobNavCart.addEventListener('click', openCart);
+}
 
 // Grid Click Interactions (Card Carousel Navigation, Quick View Modal, and Add to Cart)
 productGrid.addEventListener('click', (e) => {
@@ -157,6 +164,10 @@ function updateCartCount() {
         navPill.classList.remove('bounce');
         void navPill.offsetWidth;
         navPill.classList.add('bounce');
+    }
+    const mobPill = document.getElementById('mobCartCount');
+    if (mobPill) {
+        mobPill.textContent = total;
     }
     if (cartBtn && !navPill) {
         cartBtn.textContent = `Cart (${total})`;
@@ -641,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollTopBtn();
     initCardTilt();
     initCustomizeStudio();
+    initMobileNavSpy();
 
     // Update cart UI from local storage
     updateCartCount();
@@ -740,7 +752,7 @@ function initReviewsSlider() {
         if (currentIndex < 0) currentIndex = 0;
 
         const cardWidth = cards[0].offsetWidth;
-        const gap = 32; // 2rem
+        const gap = window.innerWidth <= 640 ? 16 : 32;
         const offset = currentIndex * (cardWidth + gap);
         track.style.transform = `translateX(-${offset}px)`;
 
@@ -832,6 +844,38 @@ function initReviewsSlider() {
     renderDots();
     updateTrack();
     startTimer();
+}
+
+// =========================================================
+// Mobile Bottom Navigation Active Scroll Spy
+// =========================================================
+function initMobileNavSpy() {
+    const sections = [
+        { id: 'home', navId: 'mobNavHome' },
+        { id: 'menu', navId: 'mobNavMenu' },
+        { id: 'customize', navId: 'mobNavCustomize' },
+        { id: 'reviews', navId: 'mobNavReviews' }
+    ];
+
+    const navItems = document.querySelectorAll('.mobile-bottom-nav .mobile-nav-item');
+    if (!navItems.length) return;
+
+    window.addEventListener('scroll', () => {
+        const scrollPos = window.scrollY + 220;
+        for (let i = sections.length - 1; i >= 0; i--) {
+            const sec = document.getElementById(sections[i].id);
+            if (sec && sec.offsetTop <= scrollPos) {
+                navItems.forEach(item => {
+                    if (!item.classList.contains('mob-cart-trigger')) {
+                        item.classList.remove('active');
+                    }
+                });
+                const activeNav = document.getElementById(sections[i].navId);
+                if (activeNav) activeNav.classList.add('active');
+                break;
+            }
+        }
+    }, { passive: true });
 }
 
 // =========================================================
