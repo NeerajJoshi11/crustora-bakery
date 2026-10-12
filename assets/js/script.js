@@ -102,7 +102,9 @@ productGrid.addEventListener('click', (e) => {
     if (btn) {
         if (btn.disabled) return;
         const card = btn.closest('.product-card');
-        const itemName = card.querySelector('h3').textContent;
+        const rawName = card.querySelector('h3').textContent;
+        const hasEggless = card.dataset.eggless === 'true';
+        const itemName = hasEggless ? `${rawName} (Eggless)` : rawName;
         const itemPrice = Number(btn.getAttribute('data-price')) || 0;
 
         const existingItem = cart.find(item => item.name === itemName);
@@ -475,6 +477,8 @@ function renderCategory(items, categoryTitle = '') {
         div.style.animationDelay = `${(i % 8) * 0.06}s`;
         div.setAttribute('data-id', item.id);
         div.dataset.images = JSON.stringify(imgs);
+        const isEggless = item.egglessAvailable !== false;
+        div.dataset.eggless = String(isEggless);
 
         const badgeHtml = !isAvailable
             ? '<span class="card-badge sold-out">Sold Out</span>'
@@ -502,6 +506,10 @@ function renderCategory(items, categoryTitle = '') {
                </button>`
             : `<button class="btn icon-btn sold-out-btn" disabled title="Currently sold out">Sold Out</button>`;
 
+        const dietaryHtml = isEggless
+            ? `<span class="card-dietary-tag" title="100% Eggless option available">🌿 Eggless Option</span>`
+            : '';
+
         div.innerHTML = `
             <div class="card-img-wrapper" data-active-idx="0" title="Click to view full photo gallery">
                 ${badgeHtml}
@@ -512,7 +520,7 @@ function renderCategory(items, categoryTitle = '') {
             </div>
             <div class="card-meta-row">
                 <span class="card-category-tag">${escapeHtml(item.category || 'Bakery')}</span>
-                <span class="card-dietary-tag">🌿 Eggless</span>
+                ${dietaryHtml}
             </div>
             <h3 title="Click to view full details" style="cursor: pointer;">${escapeHtml(item.name)}</h3>
             <p>${escapeHtml(item.desc || '')}</p>
@@ -1006,10 +1014,14 @@ const qvQtyPlus = document.getElementById('qvQtyPlus');
 const qvQtyValue = document.getElementById('qvQtyValue');
 const qvAddToCartBtn = document.getElementById('qvAddToCartBtn');
 const qvWaDirectBtn = document.getElementById('qvWaDirectBtn');
+const qvDietaryTag = document.getElementById('qvDietaryTag');
+const qvDietarySelectorRow = document.getElementById('qvDietarySelectorRow');
+const qvDietaryChips = document.getElementById('qvDietaryChips');
 
 let qvCurrentItem = null;
 let qvCurrentPhotoIdx = 0;
 let qvQty = 1;
+let qvSelectedPref = 'Eggless';
 
 async function openProductQuickView(itemId, startPhotoIdx = 0) {
     if (!quickViewModal) return;
@@ -1019,7 +1031,21 @@ async function openProductQuickView(itemId, startPhotoIdx = 0) {
     qvCurrentItem = item;
     qvCurrentPhotoIdx = startPhotoIdx;
     qvQty = 1;
+    qvSelectedPref = 'Eggless';
     if (qvQtyValue) qvQtyValue.textContent = '1';
+
+    const hasEggless = item.egglessAvailable !== false;
+    if (qvDietaryTag) {
+        qvDietaryTag.style.display = hasEggless ? 'inline-block' : 'none';
+    }
+    if (qvDietarySelectorRow) {
+        qvDietarySelectorRow.style.display = hasEggless ? 'flex' : 'none';
+        if (qvDietaryChips) {
+            qvDietaryChips.querySelectorAll('.qv-dietary-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-pref') === 'Eggless');
+            });
+        }
+    }
 
     const imgs = Array.isArray(item.images) && item.images.length > 0
         ? item.images
@@ -1157,10 +1183,21 @@ if (qvQtyPlus) {
     });
 }
 
+if (qvDietaryChips) {
+    qvDietaryChips.addEventListener('click', (e) => {
+        const btn = e.target.closest('.qv-dietary-chip');
+        if (!btn) return;
+        qvDietaryChips.querySelectorAll('.qv-dietary-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        qvSelectedPref = btn.getAttribute('data-pref') || 'Eggless';
+    });
+}
+
 if (qvAddToCartBtn) {
     qvAddToCartBtn.addEventListener('click', () => {
         if (!qvCurrentItem) return;
-        const itemName = qvCurrentItem.name;
+        const hasEggless = qvCurrentItem.egglessAvailable !== false;
+        const itemName = hasEggless ? `${qvCurrentItem.name} (${qvSelectedPref})` : qvCurrentItem.name;
         const itemPrice = Number(qvCurrentItem.price) || 0;
 
         const existingItem = cart.find(item => item.name === itemName);
@@ -1184,7 +1221,9 @@ if (qvAddToCartBtn) {
 if (qvWaDirectBtn) {
     qvWaDirectBtn.addEventListener('click', () => {
         if (!qvCurrentItem) return;
-        const itemName = qvCurrentItem.name;
+        const hasEggless = qvCurrentItem.egglessAvailable !== false;
+        const prefText = hasEggless ? ` [${qvSelectedPref}]` : '';
+        const itemName = `${qvCurrentItem.name}${prefText}`;
         const itemPrice = qvCurrentItem.price ? ` (₹${qvCurrentItem.price * qvQty})` : '';
         const msg = `Hi Crustora! 🌸 I would like to order:\n- ${qvQty}x ${itemName}${itemPrice}\n\nPlease confirm availability and details! ✨`;
         const phone = "919891775379";

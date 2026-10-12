@@ -110,7 +110,9 @@ export async function handleApiRequest(req, res) {
         // --- MENU ENDPOINTS ---
         if (pathname === '/api/menu' && method === 'GET') {
             const result = await query(`
-                SELECT id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", created_at as "createdAt", updated_at as "updatedAt"
+                SELECT id, name, category, description as desc, price, img, images, badge,
+                       eggless_available as "egglessAvailable", is_available as "isAvailable",
+                       created_at as "createdAt", updated_at as "updatedAt"
                 FROM menu_items
                 ORDER BY category ASC, name ASC;
             `);
@@ -143,9 +145,9 @@ export async function handleApiRequest(req, res) {
             const primaryImg = images[0] || body.img || 'assets/images/bento_cake.png';
 
             const result = await query(`
-                INSERT INTO menu_items (id, name, category, description, price, img, images, badge, is_available, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-                RETURNING id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", created_at as "createdAt";
+                INSERT INTO menu_items (id, name, category, description, price, img, images, badge, is_available, eggless_available, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+                RETURNING id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", eggless_available as "egglessAvailable", created_at as "createdAt";
             `, [
                 id,
                 body.name || 'Untitled Delight',
@@ -155,7 +157,8 @@ export async function handleApiRequest(req, res) {
                 primaryImg,
                 JSON.stringify(images),
                 body.badge || null,
-                body.isAvailable !== false
+                body.isAvailable !== false,
+                body.egglessAvailable !== undefined ? Boolean(body.egglessAvailable) : true
             ]);
             const row = result.rows[0];
             let imgs = Array.isArray(row.images) ? row.images : (row.images ? JSON.parse(row.images) : [row.img]);
@@ -186,9 +189,10 @@ export async function handleApiRequest(req, res) {
                     images = COALESCE($6, images),
                     badge = $7,
                     is_available = COALESCE($8, is_available),
+                    eggless_available = COALESCE($9, eggless_available),
                     updated_at = NOW()
-                WHERE id = $9
-                RETURNING id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", updated_at as "updatedAt";
+                WHERE id = $10
+                RETURNING id, name, category, description as desc, price, img, images, badge, is_available as "isAvailable", eggless_available as "egglessAvailable", updated_at as "updatedAt";
             `, [
                 body.name,
                 body.category,
@@ -198,6 +202,7 @@ export async function handleApiRequest(req, res) {
                 imagesJson,
                 body.badge !== undefined ? body.badge : null,
                 body.isAvailable,
+                body.egglessAvailable !== undefined ? Boolean(body.egglessAvailable) : null,
                 id
             ]);
             if (result.rows.length === 0) return sendJson(res, 404, { error: 'Item not found' });

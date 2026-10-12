@@ -738,7 +738,6 @@ class CrustoraDB {
         return res;
     }
 
-    // Helper to ensure images array and cover img are in sync
     _normalizeItem(item) {
         if (!item) return item;
         let images = [];
@@ -750,8 +749,15 @@ class CrustoraDB {
         if (!Array.isArray(images) || images.length === 0) {
             images = item.img ? [item.img] : ['assets/images/bento_cake.png'];
         }
+        const egglessAvailable = item.egglessAvailable !== undefined
+            ? Boolean(item.egglessAvailable)
+            : (item.eggless_available !== undefined
+                ? Boolean(item.eggless_available)
+                : (item.category !== 'Candles'));
+
         return {
             ...item,
+            egglessAvailable,
             images,
             img: images[0] || item.img || 'assets/images/bento_cake.png'
         };

@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (filtered.length === 0) {
             menuItemsTableBody.innerHTML = `
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="empty-state">
                             <div class="empty-state-icon">🍰</div>
                             <h3>No items match your filter</h3>
@@ -230,6 +230,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const badgeHtml = item.badge
                 ? `<span class="pill pill-accent">${escapeHtml(item.badge)}</span>`
                 : `<span style="color: var(--text-light); font-size: 0.85rem;">—</span>`;
+
+            const isEggless = item.egglessAvailable !== false;
+            const dietaryPill = isEggless
+                ? '<span class="pill pill-success" title="Eggless option available">🌿 Eggless</span>'
+                : '<span class="pill pill-neutral" style="opacity: 0.7;" title="No eggless option">Standard</span>';
 
             const itemImgs = Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.img ? [item.img] : []);
             const photoCount = itemImgs.length;
@@ -251,6 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                     <td><span class="pill pill-neutral">${escapeHtml(item.category || 'General')}</span></td>
                     <td><strong>₹${item.price}</strong></td>
+                    <td>${dietaryPill}</td>
                     <td>${badgeHtml}</td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 0.6rem;">
@@ -926,6 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('itemInputDesc').value = item.desc || '';
             document.getElementById('itemInputBadge').value = item.badge || '';
             document.getElementById('itemStockCheckbox').checked = item.isAvailable !== false;
+            document.getElementById('itemEgglessCheckbox').checked = item.egglessAvailable !== false;
             
             // Populate multiple images list
             const itemImgs = Array.isArray(item.images) && item.images.length > 0
@@ -939,6 +946,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('menuItemId').value = '';
             if (categories.length > 0) catSelect.value = categories[0].name;
             document.getElementById('itemStockCheckbox').checked = true;
+            document.getElementById('itemEgglessCheckbox').checked = true;
             
             currentModalImages = [DEFAULT_ITEM_IMG];
             renderGalleryManager();
@@ -966,16 +974,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const desc = document.getElementById('itemInputDesc').value.trim();
         const badge = document.getElementById('itemInputBadge').value.trim();
         const isAvailable = document.getElementById('itemStockCheckbox').checked;
+        const egglessAvailable = document.getElementById('itemEgglessCheckbox').checked;
         
         // Multi-image payload
         const images = currentModalImages.length > 0 ? [...currentModalImages] : [DEFAULT_ITEM_IMG];
         const img = images[0] || DEFAULT_ITEM_IMG;
 
         if (id) {
-            await db.updateMenuItem(id, { name, category, price, desc, badge, isAvailable, img, images });
+            await db.updateMenuItem(id, { name, category, price, desc, badge, isAvailable, egglessAvailable, img, images });
             showToast(`Updated "${name}" successfully!`, 'success');
         } else {
-            await db.addMenuItem({ name, category, price, desc, badge, isAvailable, img, images });
+            await db.addMenuItem({ name, category, price, desc, badge, isAvailable, egglessAvailable, img, images });
             showToast(`Added "${name}" to the menu!`, 'success');
         }
 

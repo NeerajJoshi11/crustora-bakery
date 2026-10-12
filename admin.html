@@ -224,6 +224,7 @@
                                 <th>Item</th>
                                 <th>Category</th>
                                 <th>Price</th>
+                                <th>Dietary</th>
                                 <th>Badge</th>
                                 <th>Stock Status</th>
                                 <th>Actions</th>
@@ -455,12 +456,16 @@
                         <div class="form-group">
                             <label for="itemInputBadge">Badge (Optional)</label>
                             <input type="text" id="itemInputBadge" class="form-control"
-                                placeholder="e.g. Bestseller, Eggless, New">
+                                placeholder="e.g. Bestseller, Chef Special, New">
                         </div>
-                        <div class="form-group">
-                            <label for="itemStockCheckbox" style="margin-top: 1.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="checkbox" id="itemStockCheckbox" checked style="width: 18px; height: 18px;">
-                                <span>In Stock / Available</span>
+                        <div class="form-group" style="display: flex; gap: 1.5rem; align-items: center; margin-top: 1.8rem; flex-wrap: wrap;">
+                            <label for="itemEgglessCheckbox" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" title="Enable if this treat offers an eggless option">
+                                <input type="checkbox" id="itemEgglessCheckbox" checked style="width: 18px; height: 18px; accent-color: #16a34a;">
+                                <span style="font-weight: 600;">🌿 Eggless Option Available</span>
+                            </label>
+                            <label for="itemStockCheckbox" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;" title="Toggle stock availability">
+                                <input type="checkbox" id="itemStockCheckbox" checked style="width: 18px; height: 18px; accent-color: #e11d48;">
+                                <span style="font-weight: 600;">In Stock</span>
                             </label>
                         </div>
                     </div>

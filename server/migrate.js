@@ -44,7 +44,17 @@ export async function runMigrations() {
             SET images = json_build_array(img)
             WHERE (images IS NULL OR images = '[]'::jsonb) AND img IS NOT NULL;
         `);
-        console.log('✅ Table "menu_items" verified/created (with multi-image support).');
+
+        // Ensure 'eggless_available' column exists
+        await query(`
+            ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS eggless_available BOOLEAN DEFAULT true;
+        `);
+        await query(`
+            UPDATE menu_items
+            SET eggless_available = false
+            WHERE category = 'Candles';
+        `);
+        console.log('✅ Table "menu_items" verified/created (with multi-image & eggless support).');
 
         // 2. Users Table
         await query(`
@@ -114,8 +124,8 @@ export async function runMigrations() {
                     ? item.images
                     : (item.img ? [item.img] : ['assets/images/bento_cake.png']);
                 await query(`
-                    INSERT INTO menu_items (id, name, category, description, price, img, images, badge, is_available, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    INSERT INTO menu_items (id, name, category, description, price, img, images, badge, is_available, eggless_available, created_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     ON CONFLICT (id) DO NOTHING;
                 `, [
                     item.id,
@@ -127,6 +137,7 @@ export async function runMigrations() {
                     JSON.stringify(itemImgs),
                     item.badge || null,
                     item.isAvailable !== false,
+                    item.egglessAvailable !== undefined ? item.egglessAvailable : (item.category !== 'Candles'),
                     item.createdAt || new Date()
                 ]);
             }

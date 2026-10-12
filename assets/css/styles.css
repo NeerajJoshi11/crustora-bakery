@@ -2208,6 +2208,57 @@ footer .logo img {
     color: var(--text-main);
 }
 
+/* Quick View Dietary Option Selector */
+.qv-dietary-selector-row {
+    margin-bottom: 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.qv-selector-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.qv-dietary-chips {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.qv-dietary-chip {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-full);
+    border: 1.5px solid rgba(244, 114, 182, 0.35);
+    background: #ffffff;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.22s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.qv-dietary-chip:hover {
+    border-color: var(--accent-color);
+    background: #fff1f6;
+    color: var(--accent-dark);
+}
+
+.qv-dietary-chip.active {
+    background: #f0fdf4;
+    border-color: #22c55e;
+    color: #15803d;
+    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.18);
+    font-weight: 700;
+}
+
 .qv-action-section {
     display: flex;
     align-items: center;
