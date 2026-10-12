@@ -346,13 +346,30 @@ const CATEGORY_ICONS = {
     'hampers': '🎁',
     'combos': '🎁',
     'cookies': '🍪',
-    'pastries': '🥐'
+    'pastries': '🥐',
+    'bloom theory': '💐',
+    'bloom': '💐',
+    'blooms': '💐',
+    'bouquets': '💐',
+    'flowers': '🌸',
+    'little charm': '✨',
+    'little charms': '✨',
+    'charms': '✨',
+    'charm': '✨',
+    'keychains': '🔑'
 };
 
 function getCategoryIcon(catName) {
     if (!catName) return '🍰';
     const clean = catName.toLowerCase().trim();
-    return CATEGORY_ICONS[clean] || '🍰';
+    if (CATEGORY_ICONS[clean]) return CATEGORY_ICONS[clean];
+    if (clean.includes('bloom') || clean.includes('bouquet') || clean.includes('flower') || clean.includes('lily')) return '💐';
+    if (clean.includes('charm') || clean.includes('keychain')) return '✨';
+    if (clean.includes('cake')) return '🎂';
+    if (clean.includes('candle')) return '🕯️';
+    if (clean.includes('choco')) return '🍫';
+    if (clean.includes('hamper') || clean.includes('gift')) return '🎁';
+    return '🍰';
 }
 
 // Dynamic Menu Rendering from Persistent Database
