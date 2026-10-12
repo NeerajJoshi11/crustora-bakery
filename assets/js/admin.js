@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ----------------------------------------------------
     // 3. Overview KPI & Recent Orders
     // ----------------------------------------------------
-    async function renderOverview() {
+    async function renderOverviewKpis() {
         const [menuItems, orders, categories] = await Promise.all([
             db.getMenuItems(),
             db.getOrders(),
@@ -122,22 +122,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inStockCount = menuItems.filter(i => i.isAvailable !== false).length;
 
         // KPI values
-        document.getElementById('kpiRevenue').textContent = `₹${revenue.toLocaleString('en-IN')}`;
-        document.getElementById('kpiOrders').textContent = orders.length;
-        document.getElementById('kpiOrdersSub').textContent = `${pendingOrders} awaiting fulfillment`;
-        document.getElementById('kpiMenuItems').textContent = menuItems.length;
-        document.getElementById('kpiInStockSub').textContent = `${inStockCount} currently available`;
+        const kpiRev = document.getElementById('kpiRevenue');
+        if (kpiRev) kpiRev.textContent = `₹${revenue.toLocaleString('en-IN')}`;
+        const kpiOrd = document.getElementById('kpiOrders');
+        if (kpiOrd) kpiOrd.textContent = orders.length;
+        const kpiOrdSub = document.getElementById('kpiOrdersSub');
+        if (kpiOrdSub) kpiOrdSub.textContent = `${pendingOrders} awaiting fulfillment`;
+        const kpiMenu = document.getElementById('kpiMenuItems');
+        if (kpiMenu) kpiMenu.textContent = menuItems.length;
+        const kpiInStock = document.getElementById('kpiInStockSub');
+        if (kpiInStock) kpiInStock.textContent = `${inStockCount} currently available`;
         const kpiCat = document.getElementById('kpiCategories');
         if (kpiCat) kpiCat.textContent = categories.length;
 
         // Badges in tabs
-        document.getElementById('menuCountBadge').textContent = menuItems.length;
+        const menuBadge = document.getElementById('menuCountBadge');
+        if (menuBadge) menuBadge.textContent = menuItems.length;
         const catBadge = document.getElementById('categoriesCountBadge');
         if (catBadge) catBadge.textContent = categories.length;
-        document.getElementById('ordersCountBadge').textContent = orders.length;
+        const ordBadge = document.getElementById('ordersCountBadge');
+        if (ordBadge) ordBadge.textContent = orders.length;
+
+        return { menuItems, orders, categories };
+    }
+
+    async function renderOverview() {
+        const { orders } = await renderOverviewKpis();
 
         // Recent orders table
         const recentBody = document.getElementById('overviewRecentOrdersBody');
+        if (!recentBody) return;
         const recent = orders.slice(0, 5);
 
         if (recent.length === 0) {
@@ -164,9 +178,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ----------------------------------------------------
-    // 4. Menu Items Management
+    // 4. Menu Items Management (In-Memory Fast Caching & Delegation)
     // ----------------------------------------------------
     let currentCategoryFilter = 'ALL';
+    let adminMenuItemsMap = new Map();
+    let adminCategoriesList = [];
+    let adminCategoriesMap = new Map();
+    let adminOrdersMap = new Map();
+
     const menuSearchInput = document.getElementById('menuSearchInput');
     const menuCategoryChips = document.getElementById('menuCategoryChips');
     const menuItemsTableBody = document.getElementById('menuItemsTableBody');
@@ -178,24 +197,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function renderMenuItems() {
         const items = await db.getMenuItems();
+        adminMenuItemsMap.clear();
+        items.forEach(i => adminMenuItemsMap.set(i.id, i));
+
         const query = (menuSearchInput.value || '').toLowerCase().trim();
 
         // Extract unique categories for filter chips
         const categories = Array.from(new Set(items.map(i => i.category || 'Cakes')));
         menuCategoryChips.innerHTML = `
-            <button class="chip-btn ${currentCategoryFilter === 'ALL' ? 'active' : ''}" data-category="ALL">All Categories (${items.length})</button>
+            <button type="button" class="chip-btn ${currentCategoryFilter === 'ALL' ? 'active' : ''}" data-category="ALL">All Categories (${items.length})</button>
             ${categories.map(cat => {
                 const count = items.filter(i => i.category === cat).length;
-                return `<button class="chip-btn ${currentCategoryFilter === cat ? 'active' : ''}" data-category="${cat}">${cat} (${count})</button>`;
+                return `<button type="button" class="chip-btn ${currentCategoryFilter === cat ? 'active' : ''}" data-category="${cat}">${cat} (${count})</button>`;
             }).join('')}
         `;
-
-        menuCategoryChips.querySelectorAll('.chip-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentCategoryFilter = btn.getAttribute('data-category');
-                renderMenuItems();
-            });
-        });
 
         // Filter items
         const filtered = items.filter(item => {
@@ -269,10 +284,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn-icon-action btn-edit-item" data-id="${item.id}" title="Edit Item">
+                            <button type="button" class="btn-icon-action btn-edit-item" data-id="${item.id}" title="Edit Item">
                                 ✏️
                             </button>
-                            <button class="btn-icon-action btn-icon-delete btn-delete-item" data-id="${item.id}" title="Delete Item">
+                            <button type="button" class="btn-icon-action btn-icon-delete btn-delete-item" data-id="${item.id}" title="Delete Item">
                                 🗑️
                             </button>
                         </div>
@@ -280,40 +295,55 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
+    }
 
-        // Attach listeners for stock toggle switches
-        menuItemsTableBody.querySelectorAll('.stock-toggle').forEach(chk => {
-            chk.addEventListener('change', async (e) => {
-                const id = chk.getAttribute('data-id');
-                const updated = await db.toggleItemAvailability(id);
-                showToast(`"${updated.name}" is now ${updated.isAvailable ? 'In Stock' : 'Sold Out'}.`, 'info');
+    // Permanent Event Delegation for Menu Items (Instant 1-Click Response)
+    menuItemsTableBody.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.btn-edit-item');
+        if (editBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = editBtn.getAttribute('data-id');
+            const item = adminMenuItemsMap.get(id) || await db.getMenuItem(id);
+            if (item) openMenuModal(item);
+            return;
+        }
+
+        const deleteBtn = e.target.closest('.btn-delete-item');
+        if (deleteBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = deleteBtn.getAttribute('data-id');
+            const item = adminMenuItemsMap.get(id) || await db.getMenuItem(id);
+            if (item && confirm(`Are you sure you want to delete "${item.name}" from the bakery catalog?`)) {
+                await db.deleteMenuItem(id);
+                showToast(`Deleted "${item.name}".`, 'info');
                 renderMenuItems();
                 renderOverview();
-            });
-        });
+            }
+            return;
+        }
+    });
 
-        // Attach edit & delete actions
-        menuItemsTableBody.querySelectorAll('.btn-edit-item').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                const item = await db.getMenuItem(id);
-                if (item) openMenuModal(item);
-            });
-        });
+    menuItemsTableBody.addEventListener('change', async (e) => {
+        const chk = e.target.closest('.stock-toggle');
+        if (chk) {
+            const id = chk.getAttribute('data-id');
+            const updated = await db.toggleItemAvailability(id);
+            showToast(`"${updated.name}" is now ${updated.isAvailable ? 'In Stock' : 'Sold Out'}.`, 'info');
+            renderMenuItems();
+            renderOverview();
+        }
+    });
 
-        menuItemsTableBody.querySelectorAll('.btn-delete-item').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                const item = await db.getMenuItem(id);
-                if (item && confirm(`Are you sure you want to delete "${item.name}" from the bakery catalog?`)) {
-                    await db.deleteMenuItem(id);
-                    showToast(`Deleted "${item.name}".`, 'info');
-                    renderMenuItems();
-                    renderOverview();
-                }
-            });
-        });
-    }
+    menuCategoryChips.addEventListener('click', (e) => {
+        const btn = e.target.closest('.chip-btn');
+        if (btn) {
+            e.preventDefault();
+            currentCategoryFilter = btn.getAttribute('data-category');
+            renderMenuItems();
+        }
+    });
 
     menuSearchInput.addEventListener('input', () => renderMenuItems());
 
@@ -915,13 +945,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    async function openMenuModal(item = null) {
+    function openMenuModal(item = null) {
         menuItemForm.reset();
         
-        // Populate category dropdown dynamically from database
-        const categories = await db.getCategories();
+        // Populate category dropdown immediately from cache (0ms)
         const catSelect = document.getElementById('itemInputCategory');
-        catSelect.innerHTML = categories.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+        if (adminCategoriesList && adminCategoriesList.length > 0) {
+            catSelect.innerHTML = adminCategoriesList.map(c => `<option value="${escapeHtml(c.name || c)}">${escapeHtml(c.name || c)}</option>`).join('');
+        } else {
+            catSelect.innerHTML = `<option value="Cakes">Cakes</option><option value="Cupcakes & Muffins">Cupcakes & Muffins</option><option value="Brownies">Brownies</option><option value="Chocolates">Chocolates</option>`;
+        }
 
         if (item) {
             document.getElementById('menuModalTitle').textContent = 'Edit Bakery Delight';
@@ -944,7 +977,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             document.getElementById('menuModalTitle').textContent = 'Add Bakery Delight';
             document.getElementById('menuItemId').value = '';
-            if (categories.length > 0) catSelect.value = categories[0].name;
+            if (adminCategoriesList.length > 0) catSelect.value = (adminCategoriesList[0].name || adminCategoriesList[0]);
             document.getElementById('itemStockCheckbox').checked = true;
             document.getElementById('itemEgglessCheckbox').checked = true;
             
@@ -954,16 +987,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (itemImagePreset) itemImagePreset.value = '';
             if (itemUrlInput) itemUrlInput.value = '';
         }
+        
+        // Open modal synchronously with 0ms delay!
         menuItemModal.classList.add('open');
+
+        // Asynchronously update categories dropdown if fresh categories exist
+        db.getCategories().then(cats => {
+            if (cats && cats.length > 0) {
+                adminCategoriesList = cats;
+                const prev = catSelect.value;
+                catSelect.innerHTML = cats.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+                if (prev) catSelect.value = prev;
+            }
+        }).catch(() => {});
     }
 
     function closeMenuModal() {
         menuItemModal.classList.remove('open');
     }
 
-    openAddMenuItemBtn.addEventListener('click', () => openMenuModal());
-    closeMenuModalBtn.addEventListener('click', closeMenuModal);
-    cancelMenuModalBtn.addEventListener('click', closeMenuModal);
+    openAddMenuItemBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openMenuModal();
+    });
+    closeMenuModalBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMenuModal();
+    });
+    cancelMenuModalBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMenuModal();
+    });
 
     menuItemForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1007,6 +1061,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function renderCategories() {
         const categories = await db.getCategories();
+        adminCategoriesList = categories;
+        adminCategoriesMap.clear();
+        categories.forEach(c => adminCategoriesMap.set(c.id, c));
+
         const query = (categoriesSearchInput?.value || '').toLowerCase().trim();
 
         // Update badge
@@ -1055,10 +1113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                     <td>
                         <div class="row-actions">
-                            <button class="btn-icon-action btn-edit-category" data-id="${cat.id}" title="Edit Category">
+                            <button type="button" class="btn-icon-action btn-edit-category" data-id="${cat.id}" title="Edit Category">
                                 ✏️
                             </button>
-                            <button class="btn-icon-action btn-icon-delete btn-delete-category" data-id="${cat.id}" data-name="${escapeHtml(cat.name)}" data-count="${itemCount}" title="Delete Category">
+                            <button type="button" class="btn-icon-action btn-icon-delete btn-delete-category" data-id="${cat.id}" data-name="${escapeHtml(cat.name)}" data-count="${itemCount}" title="Delete Category">
                                 🗑️
                             </button>
                         </div>
@@ -1066,22 +1124,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
+    }
 
-        // Attach edit buttons
-        categoriesTableBody.querySelectorAll('.btn-edit-category').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                const cat = await db.getCategory(id);
+    // Permanent Event Delegation for Categories (Instant 1-Click Response)
+    if (categoriesTableBody) {
+        categoriesTableBody.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.btn-edit-category');
+            if (editBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = editBtn.getAttribute('data-id');
+                const cat = adminCategoriesMap.get(id) || await db.getCategory(id);
                 if (cat) openCategoryModal(cat);
-            });
-        });
+                return;
+            }
 
-        // Attach delete buttons
-        categoriesTableBody.querySelectorAll('.btn-delete-category').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                const name = btn.getAttribute('data-name');
-                const count = parseInt(btn.getAttribute('data-count') || '0', 10);
+            const deleteBtn = e.target.closest('.btn-delete-category');
+            if (deleteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = deleteBtn.getAttribute('data-id');
+                const name = deleteBtn.getAttribute('data-name');
+                const count = parseInt(deleteBtn.getAttribute('data-count') || '0', 10);
 
                 const warningMsg = count > 0
                     ? `Category "${name}" contains ${count} items. Deleting it will reassign these items to 'General'. Continue?`
@@ -1094,7 +1158,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     renderMenuItems();
                     renderOverview();
                 }
-            });
+                return;
+            }
         });
     }
 
@@ -1122,9 +1187,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         categoryModal.classList.remove('open');
     }
 
-    if (openAddCategoryBtn) openAddCategoryBtn.addEventListener('click', () => openCategoryModal());
-    if (closeCategoryModalBtn) closeCategoryModalBtn.addEventListener('click', closeCategoryModal);
-    if (cancelCategoryModalBtn) cancelCategoryModalBtn.addEventListener('click', closeCategoryModal);
+    if (openAddCategoryBtn) {
+        openAddCategoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openCategoryModal();
+        });
+    }
+    if (closeCategoryModalBtn) {
+        closeCategoryModalBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeCategoryModal();
+        });
+    }
+    if (cancelCategoryModalBtn) {
+        cancelCategoryModalBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeCategoryModal();
+        });
+    }
 
     if (categoryForm) {
         categoryForm.addEventListener('submit', async (e) => {
@@ -1162,6 +1242,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function renderOrders() {
         const orders = await db.getOrders();
+        adminOrdersMap.clear();
+        orders.forEach(o => adminOrdersMap.set(o.id, o));
+
         const query = (ordersSearchInput.value || '').toLowerCase().trim();
         const status = orderStatusFilter.value;
 
@@ -1229,14 +1312,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>
                         <div class="row-actions">
                             ${hasPhoto ? `
-                                <button class="btn-icon-action btn-quick-download-photo" data-id="${o.id}" title="Download Reference Photo">
+                                <button type="button" class="btn-icon-action btn-quick-download-photo" data-id="${o.id}" title="Download Reference Photo">
                                     📥
                                 </button>
                             ` : ''}
-                            <button class="btn-icon-action btn-view-order" data-id="${o.id}" title="View Order Details">
+                            <button type="button" class="btn-icon-action btn-view-order" data-id="${o.id}" title="View Order Details">
                                 👁️
                             </button>
-                            <button class="btn-icon-action btn-icon-delete btn-delete-order" data-id="${o.id}" title="Delete Order">
+                            <button type="button" class="btn-icon-action btn-icon-delete btn-delete-order" data-id="${o.id}" title="Delete Order">
                                 🗑️
                             </button>
                         </div>
@@ -1244,73 +1327,82 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             `;
         }).join('');
+    }
 
-        // Helper to trigger photo download
-        function downloadOrderReferencePhoto(order) {
-            if (!order || !order.referencePhoto) {
-                showToast('No reference photo attached to this order.', 'warning');
+    // Helper to trigger photo download
+    function downloadOrderReferencePhoto(order) {
+        if (!order || !order.referencePhoto) {
+            showToast('No reference photo attached to this order.', 'warning');
+            return;
+        }
+        const a = document.createElement('a');
+        a.href = order.referencePhoto;
+        const cleanId = order.id.replace('ord_', '');
+        a.download = `crustora_order_${cleanId}_inspiration.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast(`📥 Reference photo for Order #${cleanId} downloaded!`, 'success');
+    }
+
+    // Permanent Event Delegation for Orders (Instant 1-Click Response)
+    if (ordersTableBody) {
+        ordersTableBody.addEventListener('click', async (e) => {
+            const dlBtn = e.target.closest('.btn-quick-download-photo');
+            if (dlBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = dlBtn.getAttribute('data-id');
+                const order = adminOrdersMap.get(id) || await db.getOrder(id);
+                if (order) downloadOrderReferencePhoto(order);
                 return;
             }
-            const a = document.createElement('a');
-            a.href = order.referencePhoto;
-            const cleanId = order.id.replace('ord_', '');
-            a.download = `crustora_order_${cleanId}_inspiration.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showToast(`📥 Reference photo for Order #${cleanId} downloaded!`, 'success');
-        }
 
-        // Quick download buttons from table row
-        ordersTableBody.querySelectorAll('.btn-quick-download-photo').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                const order = await db.getOrder(id);
-                if (order) downloadOrderReferencePhoto(order);
-            });
-        });
-
-        // Photo badge click in table row
-        ordersTableBody.querySelectorAll('.btn-photo-badge').forEach(badge => {
-            badge.addEventListener('click', async () => {
-                const id = badge.getAttribute('data-id');
-                const order = await db.getOrder(id);
+            const badgeBtn = e.target.closest('.btn-photo-badge');
+            if (badgeBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = badgeBtn.getAttribute('data-id');
+                const order = adminOrdersMap.get(id) || await db.getOrder(id);
                 if (order) openOrderDetailsModal(order);
-            });
+                return;
+            }
+
+            const viewBtn = e.target.closest('.btn-view-order');
+            if (viewBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = viewBtn.getAttribute('data-id');
+                const order = adminOrdersMap.get(id) || await db.getOrder(id);
+                if (order) openOrderDetailsModal(order);
+                return;
+            }
+
+            const delBtn = e.target.closest('.btn-delete-order');
+            if (delBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const id = delBtn.getAttribute('data-id');
+                if (confirm('Delete this order record permanently?')) {
+                    await db.deleteOrder(id);
+                    showToast('Order record removed.', 'info');
+                    renderOrders();
+                    renderOverview();
+                }
+                return;
+            }
         });
 
-        // Attach status change dropdowns
-        ordersTableBody.querySelectorAll('.order-status-select').forEach(sel => {
-            sel.addEventListener('change', async () => {
+        ordersTableBody.addEventListener('change', async (e) => {
+            const sel = e.target.closest('.order-status-select');
+            if (sel) {
                 const id = sel.getAttribute('data-id');
                 const newStatus = sel.value;
                 await db.updateOrderStatus(id, newStatus);
                 showToast(`Order status updated to ${newStatus}.`, 'success');
                 renderOrders();
                 renderOverview();
-            });
-        });
-
-        // View Order Details Modal
-        ordersTableBody.querySelectorAll('.btn-view-order').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                const order = await db.getOrder(id);
-                if (order) openOrderDetailsModal(order);
-            });
-        });
-
-        // Delete Order
-        ordersTableBody.querySelectorAll('.btn-delete-order').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.getAttribute('data-id');
-                if (confirm(`Are you sure you want to delete order #${id}?`)) {
-                    await db.deleteOrder(id);
-                    showToast('Order record deleted.', 'info');
-                    renderOrders();
-                    renderOverview();
-                }
-            });
+            }
         });
     }
 
@@ -1478,23 +1570,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ----------------------------------------------------
-    // 8. Reactive Event Listener & Loader
+    // 8. Reactive Event Listener & Loader (Debounced & Snappy)
     // ----------------------------------------------------
+    let dataReloadTimer = null;
+    function scheduleDataReload() {
+        if (dataReloadTimer) clearTimeout(dataReloadTimer);
+        dataReloadTimer = setTimeout(() => {
+            loadAllData();
+        }, 200);
+    }
+
     window.addEventListener('crustora_db_change', () => {
-        loadAllData();
+        scheduleDataReload();
     });
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && sessionStorage.getItem('crustora_admin_auth') === 'true') {
-            loadAllData();
+            scheduleDataReload();
         }
     });
 
     function loadAllData() {
-        renderOverview();
-        renderMenuItems();
-        renderCategories();
-        renderOrders();
+        const activeTab = document.querySelector('.admin-tabs .tab-btn.active')?.getAttribute('data-tab') || 'overview';
+        
+        // Fast parallel KPI refresh
+        renderOverviewKpis();
+        
+        // Render only the currently visible tab for maximum UI responsiveness
+        if (activeTab === 'menu') renderMenuItems();
+        else if (activeTab === 'categories') renderCategories();
+        else if (activeTab === 'orders') renderOrders();
+        else if (activeTab === 'overview') renderOverview();
     }
 
     // Helper: Escape HTML string

@@ -495,6 +495,8 @@ class CrustoraDB {
         this._cachedCategories = null;
         this._isRevalidatingMenu = false;
         this._isRevalidatingCategories = false;
+        this._lastMenuRevalidateTime = 0;
+        this._lastCategoriesRevalidateTime = 0;
 
         // Multi-Tab Realtime Broadcast Channel
         try {
@@ -502,8 +504,9 @@ class CrustoraDB {
             if (this._syncChannel) {
                 this._syncChannel.onmessage = (e) => {
                     if (e.data && e.data.type === 'db_change') {
-                        this._cachedMenuItems = null;
-                        this._cachedCategories = null;
+                        // Keep memory cache intact for 0ms UI clicks; background sync will refresh if needed
+                        this._lastMenuRevalidateTime = 0;
+                        this._lastCategoriesRevalidateTime = 0;
                         window.dispatchEvent(new CustomEvent('crustora_db_change', { detail: e.data }));
                     }
                 };
@@ -516,8 +519,8 @@ class CrustoraDB {
         if (typeof window !== 'undefined') {
             window.addEventListener('storage', (e) => {
                 if (e.key === 'crustora_last_sync') {
-                    this._cachedMenuItems = null;
-                    this._cachedCategories = null;
+                    this._lastMenuRevalidateTime = 0;
+                    this._lastCategoriesRevalidateTime = 0;
                     window.dispatchEvent(new CustomEvent('crustora_db_change', { detail: { scope: 'all' } }));
                 }
             });
@@ -727,7 +730,9 @@ class CrustoraDB {
 
     _revalidateCategoriesInBackground() {
         if (this._isRevalidatingCategories) return;
+        if (Date.now() - this._lastCategoriesRevalidateTime < 15000) return;
         this._isRevalidatingCategories = true;
+        this._lastCategoriesRevalidateTime = Date.now();
         setTimeout(async () => {
             try {
                 const res = await fetch('/api/categories');
@@ -738,12 +743,12 @@ class CrustoraDB {
                     if (oldStr !== newStr) {
                         for (const cat of fresh) await this.put('categories', cat);
                         this._cachedCategories = fresh;
-                        this.notifyChange('categories');
+                        this.notifyChange('categories', false);
                     }
                 }
             } catch (e) { }
             this._isRevalidatingCategories = false;
-        }, 40);
+        }, 60);
     }
 
     async getCategory(id) {
@@ -879,7 +884,9 @@ class CrustoraDB {
 
     _revalidateMenuItemsInBackground() {
         if (this._isRevalidatingMenu) return;
+        if (Date.now() - this._lastMenuRevalidateTime < 15000) return;
         this._isRevalidatingMenu = true;
+        this._lastMenuRevalidateTime = Date.now();
         setTimeout(async () => {
             try {
                 const res = await fetch('/api/menu');
@@ -894,12 +901,12 @@ class CrustoraDB {
                     if (oldStr !== newStr) {
                         for (const item of sorted) await this.put('menu_items', item);
                         this._cachedMenuItems = sorted;
-                        this.notifyChange('menu');
+                        this.notifyChange('menu', false);
                     }
                 }
             } catch (e) { }
             this._isRevalidatingMenu = false;
-        }, 40);
+        }, 60);
     }
 
     async getMenuItem(id) {
@@ -1240,9 +1247,11 @@ class CrustoraDB {
         return true;
     }
 
-    notifyChange(scope) {
-        this._cachedMenuItems = null;
-        this._cachedCategories = null;
+    notifyChange(scope, wipeCache = false) {
+        if (wipeCache) {
+            this._cachedMenuItems = null;
+            this._cachedCategories = null;
+        }
         window.dispatchEvent(new CustomEvent('crustora_db_change', { detail: { scope } }));
         if (this._syncChannel) {
             try {

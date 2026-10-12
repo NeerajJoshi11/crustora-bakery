@@ -606,9 +606,12 @@ function renderCategory(items, categoryTitle = '') {
     });
 }
 
-// Live update storefront when admin changes database records
+let scriptReloadTimer = null;
 window.addEventListener('crustora_db_change', () => {
-    renderMenu(true);
+    if (scriptReloadTimer) clearTimeout(scriptReloadTimer);
+    scriptReloadTimer = setTimeout(() => {
+        renderMenu(true);
+    }, 200);
 });
 
 // Auto-refresh when user switches back to Crustora tab or restores browser
