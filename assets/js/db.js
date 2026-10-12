@@ -592,10 +592,18 @@ class CrustoraDB {
     }
 
     async seedDefaultsIfNeeded() {
-        const items = await this.getAll('menu_items');
+        const [items, cats] = await Promise.all([
+            this.getAll('menu_items'),
+            this.getAll('categories')
+        ]);
         if (items.length === 0) {
             for (const item of DEFAULT_MENU_ITEMS) {
                 await this.put('menu_items', item);
+            }
+        }
+        if (cats.length === 0) {
+            for (const cat of DEFAULT_CATEGORIES) {
+                await this.put('categories', cat);
             }
         }
     }
@@ -692,22 +700,40 @@ class CrustoraDB {
         });
     }
 
-    // --- CATEGORIES CRUD (Supabase PostgreSQL + Instant Local Cache) ---
+    // --- CATEGORIES CRUD (Instant Synchronous Cache-First + Background Revalidation) ---
     async getCategories() {
         if (this._cachedCategories && this._cachedCategories.length > 0) {
             this._revalidateCategoriesInBackground();
             return this._cachedCategories;
         }
 
-        // Fast local database read (0ms)
+        // 1. Instant synchronous memory/localStorage cache read (0ms)
+        try {
+            const stored = localStorage.getItem('crustora_categories_cache');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    this._cachedCategories = parsed;
+                    this._revalidateCategoriesInBackground();
+                    return parsed;
+                }
+            }
+        } catch (e) { }
+
+        // 2. Fast local IndexedDB read
         const local = await this.getAll('categories');
         if (local && local.length > 0) {
             this._cachedCategories = local;
+            try { localStorage.setItem('crustora_categories_cache', JSON.stringify(local)); } catch (e) {}
             this._revalidateCategoriesInBackground();
             return local;
         }
 
-        return await this._fetchAndCacheCategories();
+        // 3. Fallback to DEFAULT_CATEGORIES immediately so page NEVER waits or blocks
+        this._cachedCategories = DEFAULT_CATEGORIES;
+        try { localStorage.setItem('crustora_categories_cache', JSON.stringify(DEFAULT_CATEGORIES)); } catch (e) {}
+        this._revalidateCategoriesInBackground();
+        return DEFAULT_CATEGORIES;
     }
 
     async _fetchAndCacheCategories() {
@@ -717,6 +743,7 @@ class CrustoraDB {
                 const cats = await res.json();
                 for (const cat of cats) await this.put('categories', cat);
                 this._cachedCategories = cats;
+                try { localStorage.setItem('crustora_categories_cache', JSON.stringify(cats)); } catch (e) {}
                 return cats;
             }
         } catch (e) {
@@ -725,6 +752,7 @@ class CrustoraDB {
         const cats = await this.getAll('categories');
         const finalCats = cats.length > 0 ? cats : DEFAULT_CATEGORIES;
         this._cachedCategories = finalCats;
+        try { localStorage.setItem('crustora_categories_cache', JSON.stringify(finalCats)); } catch (e) {}
         return finalCats;
     }
 
@@ -743,6 +771,7 @@ class CrustoraDB {
                     if (oldStr !== newStr) {
                         for (const cat of fresh) await this.put('categories', cat);
                         this._cachedCategories = fresh;
+                        try { localStorage.setItem('crustora_categories_cache', JSON.stringify(fresh)); } catch (e) {}
                         this.notifyChange('categories', false);
                     }
                 }
@@ -840,24 +869,46 @@ class CrustoraDB {
         };
     }
 
-    // --- MENU ITEMS CRUD (Supabase PostgreSQL + Instant Local Cache) ---
+    // --- MENU ITEMS CRUD (Instant Synchronous Cache-First + Background Revalidation) ---
     async getMenuItems() {
         if (this._cachedMenuItems && this._cachedMenuItems.length > 0) {
             this._revalidateMenuItemsInBackground();
             return this._cachedMenuItems;
         }
 
-        // Fast cached read (0ms)
+        // 1. Instant synchronous memory/localStorage cache read (0ms)
+        try {
+            const stored = localStorage.getItem('crustora_menu_cache');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    const normalized = parsed.map(i => this._normalizeItem(i))
+                        .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                    this._cachedMenuItems = normalized;
+                    this._revalidateMenuItemsInBackground();
+                    return normalized;
+                }
+            }
+        } catch (e) { }
+
+        // 2. Fast local IndexedDB read
         const rawItems = await this.getAll('menu_items');
         if (rawItems && rawItems.length > 0) {
             const normalized = rawItems.map(i => this._normalizeItem(i))
                 .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
             this._cachedMenuItems = normalized;
+            try { localStorage.setItem('crustora_menu_cache', JSON.stringify(normalized)); } catch (e) {}
             this._revalidateMenuItemsInBackground();
             return normalized;
         }
 
-        return await this._fetchAndCacheMenuItems();
+        // 3. Fallback to DEFAULT_MENU_ITEMS immediately so UI NEVER waits or stays blank
+        const defaultNorm = DEFAULT_MENU_ITEMS.map(i => this._normalizeItem(i))
+            .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+        this._cachedMenuItems = defaultNorm;
+        try { localStorage.setItem('crustora_menu_cache', JSON.stringify(defaultNorm)); } catch (e) {}
+        this._revalidateMenuItemsInBackground();
+        return defaultNorm;
     }
 
     async _fetchAndCacheMenuItems() {
@@ -869,6 +920,7 @@ class CrustoraDB {
                 for (const item of normalized) await this.put('menu_items', item);
                 const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
                 this._cachedMenuItems = sorted;
+                try { localStorage.setItem('crustora_menu_cache', JSON.stringify(sorted)); } catch (e) {}
                 return sorted;
             }
         } catch (e) {
@@ -879,6 +931,7 @@ class CrustoraDB {
             .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
         const finalItems = items.length > 0 ? items : DEFAULT_MENU_ITEMS;
         this._cachedMenuItems = finalItems;
+        try { localStorage.setItem('crustora_menu_cache', JSON.stringify(finalItems)); } catch (e) {}
         return finalItems;
     }
 
@@ -901,6 +954,7 @@ class CrustoraDB {
                     if (oldStr !== newStr) {
                         for (const item of sorted) await this.put('menu_items', item);
                         this._cachedMenuItems = sorted;
+                        try { localStorage.setItem('crustora_menu_cache', JSON.stringify(sorted)); } catch (e) {}
                         this.notifyChange('menu', false);
                     }
                 }

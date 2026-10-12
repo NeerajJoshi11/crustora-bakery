@@ -20,9 +20,12 @@ async function parseBody(req) {
     });
 }
 
-function sendJson(res, statusCode, data) {
+function sendJson(res, statusCode, data, cacheHeader = null) {
     res.statusCode = statusCode;
     res.setHeader('Content-Type', 'application/json');
+    if (cacheHeader) {
+        res.setHeader('Cache-Control', cacheHeader);
+    }
     res.end(JSON.stringify(data));
 }
 
@@ -43,7 +46,7 @@ export async function handleApiRequest(req, res) {
                 GROUP BY c.id
                 ORDER BY c.display_order ASC, c.name ASC;
             `);
-            return sendJson(res, 200, result.rows);
+            return sendJson(res, 200, result.rows, 'public, s-maxage=30, stale-while-revalidate=300');
         }
 
         if (pathname === '/api/categories' && method === 'POST') {
@@ -132,7 +135,7 @@ export async function handleApiRequest(req, res) {
                     img: imgs[0] || row.img || 'assets/images/bento_cake.png'
                 };
             });
-            return sendJson(res, 200, items);
+            return sendJson(res, 200, items, 'public, s-maxage=30, stale-while-revalidate=300');
         }
 
         if (pathname === '/api/menu' && method === 'POST') {
