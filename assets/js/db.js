@@ -491,6 +491,37 @@ class CrustoraDB {
         this.db = null;
         this.initialized = false;
         this.isIndexedDBSupported = typeof indexedDB !== 'undefined';
+        this._cachedMenuItems = null;
+        this._cachedCategories = null;
+        this._isRevalidatingMenu = false;
+        this._isRevalidatingCategories = false;
+
+        // Multi-Tab Realtime Broadcast Channel
+        try {
+            this._syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('crustora_sync_bus') : null;
+            if (this._syncChannel) {
+                this._syncChannel.onmessage = (e) => {
+                    if (e.data && e.data.type === 'db_change') {
+                        this._cachedMenuItems = null;
+                        this._cachedCategories = null;
+                        window.dispatchEvent(new CustomEvent('crustora_db_change', { detail: e.data }));
+                    }
+                };
+            }
+        } catch (e) {
+            this._syncChannel = null;
+        }
+
+        // Storage Event Fallback for Cross-Tab Sync
+        if (typeof window !== 'undefined') {
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'crustora_last_sync') {
+                    this._cachedMenuItems = null;
+                    this._cachedCategories = null;
+                    window.dispatchEvent(new CustomEvent('crustora_db_change', { detail: { scope: 'all' } }));
+                }
+            });
+        }
     }
 
     async init() {
@@ -658,20 +689,61 @@ class CrustoraDB {
         });
     }
 
-    // --- CATEGORIES CRUD (Supabase PostgreSQL + Local Cache) ---
+    // --- CATEGORIES CRUD (Supabase PostgreSQL + Instant Local Cache) ---
     async getCategories() {
+        if (this._cachedCategories && this._cachedCategories.length > 0) {
+            this._revalidateCategoriesInBackground();
+            return this._cachedCategories;
+        }
+
+        // Fast local database read (0ms)
+        const local = await this.getAll('categories');
+        if (local && local.length > 0) {
+            this._cachedCategories = local;
+            this._revalidateCategoriesInBackground();
+            return local;
+        }
+
+        return await this._fetchAndCacheCategories();
+    }
+
+    async _fetchAndCacheCategories() {
         try {
             const res = await fetch('/api/categories');
             if (res.ok) {
                 const cats = await res.json();
                 for (const cat of cats) await this.put('categories', cat);
+                this._cachedCategories = cats;
                 return cats;
             }
         } catch (e) {
             console.warn('API error, using cached categories:', e);
         }
         const cats = await this.getAll('categories');
-        return cats.length > 0 ? cats : DEFAULT_CATEGORIES;
+        const finalCats = cats.length > 0 ? cats : DEFAULT_CATEGORIES;
+        this._cachedCategories = finalCats;
+        return finalCats;
+    }
+
+    _revalidateCategoriesInBackground() {
+        if (this._isRevalidatingCategories) return;
+        this._isRevalidatingCategories = true;
+        setTimeout(async () => {
+            try {
+                const res = await fetch('/api/categories');
+                if (res.ok) {
+                    const fresh = await res.json();
+                    const oldStr = JSON.stringify(this._cachedCategories || []);
+                    const newStr = JSON.stringify(fresh);
+                    if (oldStr !== newStr) {
+                        for (const cat of fresh) await this.put('categories', cat);
+                        this._cachedCategories = fresh;
+                        this.notifyChange('categories');
+                    }
+                }
+            } catch (e) { }
+            this._isRevalidatingCategories = false;
+        }, 40);
     }
 
     async getCategory(id) {
@@ -763,22 +835,71 @@ class CrustoraDB {
         };
     }
 
-    // --- MENU ITEMS CRUD (Supabase PostgreSQL + Local Cache) ---
+    // --- MENU ITEMS CRUD (Supabase PostgreSQL + Instant Local Cache) ---
     async getMenuItems() {
+        if (this._cachedMenuItems && this._cachedMenuItems.length > 0) {
+            this._revalidateMenuItemsInBackground();
+            return this._cachedMenuItems;
+        }
+
+        // Fast cached read (0ms)
+        const rawItems = await this.getAll('menu_items');
+        if (rawItems && rawItems.length > 0) {
+            const normalized = rawItems.map(i => this._normalizeItem(i))
+                .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+            this._cachedMenuItems = normalized;
+            this._revalidateMenuItemsInBackground();
+            return normalized;
+        }
+
+        return await this._fetchAndCacheMenuItems();
+    }
+
+    async _fetchAndCacheMenuItems() {
         try {
             const res = await fetch('/api/menu');
             if (res.ok) {
                 const items = await res.json();
                 const normalized = items.map(i => this._normalizeItem(i));
                 for (const item of normalized) await this.put('menu_items', item);
-                return normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                this._cachedMenuItems = sorted;
+                return sorted;
             }
         } catch (e) {
             console.warn('API error, using cached menu items:', e);
         }
         const rawItems = await this.getAll('menu_items');
-        const items = rawItems.map(i => this._normalizeItem(i));
-        return items.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+        const items = rawItems.map(i => this._normalizeItem(i))
+            .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+        const finalItems = items.length > 0 ? items : DEFAULT_MENU_ITEMS;
+        this._cachedMenuItems = finalItems;
+        return finalItems;
+    }
+
+    _revalidateMenuItemsInBackground() {
+        if (this._isRevalidatingMenu) return;
+        this._isRevalidatingMenu = true;
+        setTimeout(async () => {
+            try {
+                const res = await fetch('/api/menu');
+                if (res.ok) {
+                    const fresh = await res.json();
+                    const normalized = fresh.map(i => this._normalizeItem(i));
+                    const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                    
+                    const oldStr = JSON.stringify((this._cachedMenuItems || []).map(i => ({ id: i.id, name: i.name, p: i.price, a: i.isAvailable, e: i.egglessAvailable, c: i.category })));
+                    const newStr = JSON.stringify(sorted.map(i => ({ id: i.id, name: i.name, p: i.price, a: i.isAvailable, e: i.egglessAvailable, c: i.category })));
+                    
+                    if (oldStr !== newStr) {
+                        for (const item of sorted) await this.put('menu_items', item);
+                        this._cachedMenuItems = sorted;
+                        this.notifyChange('menu');
+                    }
+                }
+            } catch (e) { }
+            this._isRevalidatingMenu = false;
+        }, 40);
     }
 
     async getMenuItem(id) {
@@ -1120,7 +1241,17 @@ class CrustoraDB {
     }
 
     notifyChange(scope) {
+        this._cachedMenuItems = null;
+        this._cachedCategories = null;
         window.dispatchEvent(new CustomEvent('crustora_db_change', { detail: { scope } }));
+        if (this._syncChannel) {
+            try {
+                this._syncChannel.postMessage({ type: 'db_change', scope, timestamp: Date.now() });
+            } catch (e) { }
+        }
+        try {
+            localStorage.setItem('crustora_last_sync', String(Date.now()));
+        } catch (e) { }
     }
 }
 

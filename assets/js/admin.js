@@ -1484,6 +1484,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadAllData();
     });
 
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && sessionStorage.getItem('crustora_admin_auth') === 'true') {
+            loadAllData();
+        }
+    });
+
     function loadAllData() {
         renderOverview();
         renderMenuItems();

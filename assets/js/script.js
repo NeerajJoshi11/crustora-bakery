@@ -375,12 +375,43 @@ function getCategoryIcon(catName) {
 // Dynamic Menu Rendering from Persistent Database
 let currentMenuCategories = {};
 let allMenuItemsCache = [];
+let lastRenderedFingerprint = '';
 
-async function renderMenu() {
+// Instant Shimmer Skeleton Renderer
+function renderSkeletonCards(container, count = 6) {
+    if (!container) return;
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        html += `
+            <div class="skeleton-card" aria-hidden="true">
+                <div class="skeleton-img skeleton-shimmer"></div>
+                <div class="skeleton-meta">
+                    <div class="skeleton-tag skeleton-shimmer"></div>
+                    <div class="skeleton-dietary skeleton-shimmer"></div>
+                </div>
+                <div class="skeleton-title skeleton-shimmer"></div>
+                <div class="skeleton-desc skeleton-shimmer"></div>
+                <div class="skeleton-desc-short skeleton-shimmer"></div>
+                <div class="skeleton-price-row">
+                    <div class="skeleton-price skeleton-shimmer"></div>
+                    <div class="skeleton-btn skeleton-shimmer"></div>
+                </div>
+            </div>
+        `;
+    }
+    container.innerHTML = html;
+}
+
+async function renderMenu(forceRedraw = false) {
     const tabsContainer = document.getElementById('menuTabs');
     const gridContainer = document.getElementById('productGrid');
 
     if (!tabsContainer || !gridContainer) return;
+
+    // Show instant luxury skeletons if grid is currently empty
+    if (!gridContainer.children.length) {
+        renderSkeletonCards(gridContainer, 6);
+    }
 
     let [items, categories] = await Promise.all([
         db.getMenuItems(),
@@ -420,6 +451,19 @@ async function renderMenu() {
         ? currentActiveText
         : categoryNames[0];
 
+    // Compute data fingerprint to avoid jarring DOM rebuilds on background sync if unchanged
+    const newFingerprint = JSON.stringify({
+        catOrder: categoryNames,
+        active: activeCategory,
+        items: (currentMenuCategories[activeCategory] || []).map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.badge])
+    });
+
+    const hasSkeletons = !!gridContainer.querySelector('.skeleton-card');
+    if (!forceRedraw && !hasSkeletons && lastRenderedFingerprint === newFingerprint && tabsContainer.children.length > 0) {
+        return; // Data has not changed, keep current smooth view
+    }
+    lastRenderedFingerprint = newFingerprint;
+
     // Render Tabs
     tabsContainer.innerHTML = '';
     categoryNames.forEach((catName) => {
@@ -448,8 +492,8 @@ async function renderMenu() {
             const productCards = gridContainer.querySelectorAll('.product-card');
             productCards.forEach((card, i) => {
                 card.classList.remove('is-visible');
-                card.style.animationDelay = `${(i % 8) * 0.06}s`;
-                setTimeout(() => card.classList.add('is-visible'), 50);
+                card.style.animationDelay = `${(i % 8) * 0.05}s`;
+                setTimeout(() => card.classList.add('is-visible'), 40);
             });
         });
         tabsContainer.appendChild(btn);
@@ -489,9 +533,19 @@ function renderCategory(items, categoryTitle = '') {
             : (item.img ? [item.img] : ['assets/images/bento_cake.png']);
         const hasMultiple = imgs.length > 1;
 
+        // Background preload remaining photos for instant carousel switching
+        if (hasMultiple && typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            window.requestIdleCallback(() => {
+                imgs.slice(1).forEach(url => {
+                    const preloadImg = new Image();
+                    preloadImg.src = url;
+                });
+            });
+        }
+
         const div = document.createElement('div');
         div.className = 'product-card fade-in-up';
-        div.style.animationDelay = `${(i % 8) * 0.06}s`;
+        div.style.animationDelay = `${(i % 8) * 0.05}s`;
         div.setAttribute('data-id', item.id);
         div.dataset.images = JSON.stringify(imgs);
         const isEggless = item.egglessAvailable !== false;
@@ -531,7 +585,7 @@ function renderCategory(items, categoryTitle = '') {
             <div class="card-img-wrapper" data-active-idx="0" title="Click to view full photo gallery">
                 ${badgeHtml}
                 ${photosBadgeHtml}
-                <img src="${imgs[0]}" alt="${escapeHtml(item.name)}" class="product-img" loading="lazy" onerror="this.src='assets/images/bento_cake.png'">
+                <img src="${imgs[0]}" alt="${escapeHtml(item.name)}" class="product-img" loading="${i < 4 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${i < 4 ? 'high' : 'auto'}" onerror="this.src='assets/images/bento_cake.png'">
                 ${navButtonsHtml}
                 ${dotsHtml}
             </div>
@@ -554,8 +608,25 @@ function renderCategory(items, categoryTitle = '') {
 
 // Live update storefront when admin changes database records
 window.addEventListener('crustora_db_change', () => {
-    renderMenu();
+    renderMenu(true);
 });
+
+// Auto-refresh when user switches back to Crustora tab or restores browser
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        renderMenu(false);
+    }
+});
+window.addEventListener('focus', () => {
+    renderMenu(false);
+});
+
+// Periodic gentle background revalidation (every 20s) so live updates sync seamlessly
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        db.getMenuItems(); // Revalidates in background; triggers crustora_db_change if changes exist
+    }
+}, 20000);
 
 // Category Rail Scroll Controls & Smooth Mouse Wheel
 function initCategoryRailControls() {
