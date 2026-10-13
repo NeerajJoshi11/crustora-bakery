@@ -148,7 +148,11 @@ export async function handleApiRequest(req, res) {
             const version = new Date(row.updated_at || row.created_at || Date.now()).getTime();
             const etag = `"${itemId}-${idx}-${version}"`;
 
-            // Cache in memory for instantaneous hits
+            // Cache in memory with LRU cap (max 40 images) to prevent memory accumulation on Vercel
+            if (cachedImageBuffers.size >= 40) {
+                const oldestKey = cachedImageBuffers.keys().next().value;
+                if (oldestKey) cachedImageBuffers.delete(oldestKey);
+            }
             cachedImageBuffers.set(cacheKey, { buffer, mime, etag });
 
             if (req.headers['if-none-match'] === etag) {

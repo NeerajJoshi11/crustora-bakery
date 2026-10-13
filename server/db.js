@@ -8,7 +8,10 @@ const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.gcir
 
 export const pool = new Pool({
     connectionString,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    max: 2, // Serverless best practice: low pool size per container prevents memory bloat
+    idleTimeoutMillis: 10000, // Recycle idle connections quickly
+    connectionTimeoutMillis: 5000 // Prevent hanging connections
 });
 
 export const query = (text, params) => pool.query(text, params);
