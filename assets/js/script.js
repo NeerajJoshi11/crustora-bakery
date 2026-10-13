@@ -431,7 +431,8 @@ function applyCatalogData(items, categories, tabsContainer, gridContainer, force
 
     // Determine active tab (preserve previous active tab name or default to first category)
     const activeBtn = tabsContainer.querySelector('.menu-tab-btn.active');
-    const currentActiveText = activeBtn ? activeBtn.getAttribute('data-cat') : null;
+    const savedActiveCat = (() => { try { return sessionStorage.getItem('crustora_active_category'); } catch(e) { return null; } })();
+    const currentActiveText = activeBtn ? activeBtn.getAttribute('data-cat') : savedActiveCat;
     const activeCategory = (currentActiveText && categoryNames.includes(currentActiveText))
         ? currentActiveText
         : categoryNames[0];
@@ -470,6 +471,7 @@ function applyCatalogData(items, categories, tabsContainer, gridContainer, force
             btn.classList.add('active');
             btn.setAttribute('aria-selected', 'true');
             btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            try { sessionStorage.setItem('crustora_active_category', catName); } catch(e) {}
 
             renderCategory(currentMenuCategories[catName], catName);
             updateCategoryDrawerData();

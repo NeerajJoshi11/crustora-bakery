@@ -49,13 +49,18 @@ function sendJson(req, res, statusCode, data, cacheHeader = null) {
     res.setHeader('Content-Type', 'application/json');
     if (cacheHeader) {
         res.setHeader('Cache-Control', cacheHeader);
+        if (cacheHeader.includes('no-store') || cacheHeader.includes('no-cache')) {
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
     }
 
     const jsonStr = JSON.stringify(data);
     const etag = `W/"${crypto.createHash('md5').update(jsonStr).digest('hex').substring(0, 16)}"`;
     res.setHeader('ETag', etag);
 
-    if (req.headers && req.headers['if-none-match'] === etag) {
+    const isNoCacheReq = cacheHeader && (cacheHeader.includes('no-store') || cacheHeader.includes('no-cache'));
+    if (!isNoCacheReq && req.headers && req.headers['if-none-match'] === etag) {
         res.statusCode = 304;
         res.end();
         return;
@@ -162,9 +167,9 @@ export async function handleApiRequest(req, res) {
 
         // --- CATEGORIES ENDPOINTS ---
         if (pathname === '/api/categories' && method === 'GET') {
-            const isNoCache = url.searchParams.has('nocache') || url.searchParams.has('_t');
-            if (!isNoCache && cachedCategoriesData && (Date.now() - cachedCategoriesTime < SERVER_CACHE_TTL)) {
-                return sendJson(req, res, 200, cachedCategoriesData, 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800');
+            const isNoCache = url.searchParams.has('nocache') || url.searchParams.has('_t') || req.headers['x-admin-bypass'];
+            if (!isNoCache && cachedCategoriesData && (Date.now() - cachedCategoriesTime < 30 * 1000)) {
+                return sendJson(req, res, 200, cachedCategoriesData, 'public, max-age=10, s-maxage=30, stale-while-revalidate=60');
             }
             const result = await query(`
                 SELECT c.id, c.name, c.description as desc, c.display_order as "displayOrder",
@@ -177,7 +182,7 @@ export async function handleApiRequest(req, res) {
             `);
             cachedCategoriesData = result.rows;
             cachedCategoriesTime = Date.now();
-            const cacheHdr = isNoCache ? 'private, no-cache, no-store, must-revalidate' : 'public, max-age=300, s-maxage=86400, stale-while-revalidate=604800';
+            const cacheHdr = isNoCache ? 'private, no-cache, no-store, must-revalidate, max-age=0, s-maxage=0' : 'public, max-age=10, s-maxage=30, stale-while-revalidate=60';
             return sendJson(req, res, 200, result.rows, cacheHdr);
         }
 
@@ -244,8 +249,8 @@ export async function handleApiRequest(req, res) {
         // --- MENU ENDPOINTS ---
         if (pathname === '/api/menu' && method === 'GET') {
             const isNoCache = url.searchParams.has('nocache') || url.searchParams.has('_t') || req.headers['x-admin-bypass'];
-            if (!isNoCache && cachedMenuData && (Date.now() - cachedMenuTime < SERVER_CACHE_TTL)) {
-                return sendJson(req, res, 200, cachedMenuData, 'public, max-age=120, s-maxage=86400, stale-while-revalidate=604800');
+            if (!isNoCache && cachedMenuData && (Date.now() - cachedMenuTime < 30 * 1000)) {
+                return sendJson(req, res, 200, cachedMenuData, 'public, max-age=10, s-maxage=30, stale-while-revalidate=60');
             }
             const result = await query(`
                 SELECT id, name, category, description as desc, price, img, images, badge,
@@ -289,8 +294,8 @@ export async function handleApiRequest(req, res) {
             cachedMenuData = items;
             cachedMenuTime = Date.now();
             const cacheHeader = isNoCache
-                ? 'private, no-cache, no-store, must-revalidate'
-                : 'public, max-age=120, s-maxage=86400, stale-while-revalidate=604800';
+                ? 'private, no-cache, no-store, must-revalidate, max-age=0, s-maxage=0'
+                : 'public, max-age=10, s-maxage=30, stale-while-revalidate=60';
             return sendJson(req, res, 200, items, cacheHeader);
         }
 

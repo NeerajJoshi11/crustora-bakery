@@ -799,7 +799,10 @@ class CrustoraDB {
         return DEFAULT_CATEGORIES;
     }
 
-    async getCategories() {
+    async getCategories(force = false) {
+        if (force) {
+            return await this._fetchAndCacheCategories(true);
+        }
         if (this._cachedCategories && this._cachedCategories.length > 0) {
             this._revalidateCategoriesInBackground();
             return this._cachedCategories;
@@ -828,9 +831,11 @@ class CrustoraDB {
         return DEFAULT_CATEGORIES;
     }
 
-    async _fetchAndCacheCategories() {
+    async _fetchAndCacheCategories(force = false) {
         try {
-            const res = await fetch('/api/categories');
+            const url = force ? `/api/categories?nocache=1&_t=${Date.now()}` : '/api/categories';
+            const headers = force ? { 'x-admin-bypass': '1', 'Cache-Control': 'no-cache' } : {};
+            const res = await fetch(url, { headers });
             if (res.ok) {
                 const cats = await res.json();
                 await this.putBulk('categories', cats);
@@ -850,13 +855,15 @@ class CrustoraDB {
 
     _revalidateCategoriesInBackground(force = false) {
         if (this._isRevalidatingCategories) return;
-        if (!force && Date.now() - this._lastCategoriesRevalidateTime < 15 * 60 * 1000) return;
+        if (!force && Date.now() - this._lastCategoriesRevalidateTime < 60 * 1000) return;
         this._isRevalidatingCategories = true;
         this._lastCategoriesRevalidateTime = Date.now();
         setTimeout(async () => {
             try {
-                const url = force ? `/api/categories?nocache=1&_t=${Date.now()}` : '/api/categories';
-                const res = await fetch(url);
+                const url = `/api/categories?nocache=1&_t=${Date.now()}`;
+                const res = await fetch(url, {
+                    headers: { 'x-admin-bypass': '1', 'Cache-Control': 'no-cache' }
+                });
                 if (res.ok) {
                     const fresh = await res.json();
                     const oldStr = JSON.stringify(this._cachedCategories || []);
@@ -970,6 +977,24 @@ class CrustoraDB {
         return null;
     }
 
+    // Memory Cache Update Helpers
+    _updateMemoryCacheItem(item) {
+        if (!this._cachedMenuItems) this._cachedMenuItems = [];
+        const idx = this._cachedMenuItems.findIndex(i => i.id === item.id);
+        if (idx >= 0) {
+            this._cachedMenuItems[idx] = item;
+        } else {
+            this._cachedMenuItems.push(item);
+        }
+        this._cachedMenuItems.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+    }
+
+    _removeMemoryCacheItem(id) {
+        if (this._cachedMenuItems) {
+            this._cachedMenuItems = this._cachedMenuItems.filter(i => i.id !== id);
+        }
+    }
+
     // --- MENU ITEMS CRUD (IndexedDB Cache-First + Background Revalidation) ---
     async getMenuItems(force = false) {
         if (force) {
@@ -991,13 +1016,14 @@ class CrustoraDB {
         }
 
         // 2. Fallback to API with local cache
-        return await this._fetchAndCacheMenuItems();
+        return await this._fetchAndCacheMenuItems(false);
     }
 
     async _fetchAndCacheMenuItems(force = false) {
         try {
             const url = force ? `/api/menu?nocache=1&_t=${Date.now()}` : '/api/menu';
-            const res = await fetch(url);
+            const headers = force ? { 'x-admin-bypass': '1', 'Cache-Control': 'no-cache' } : {};
+            const res = await fetch(url, { headers });
             if (res.ok) {
                 const items = await res.json();
                 const normalized = items.map(i => this._normalizeItem(i));
@@ -1019,17 +1045,27 @@ class CrustoraDB {
 
     _revalidateMenuItemsInBackground(force = false) {
         if (this._isRevalidatingMenu) return;
-        if (!force && Date.now() - this._lastMenuRevalidateTime < 5 * 60 * 1000) return;
+        if (!force && Date.now() - this._lastMenuRevalidateTime < 60 * 1000) return;
         this._isRevalidatingMenu = true;
         this._lastMenuRevalidateTime = Date.now();
         setTimeout(async () => {
             try {
-                const url = force ? `/api/menu?nocache=1&_t=${Date.now()}` : '/api/menu';
-                const res = await fetch(url);
+                // Background revalidation ALWAYS requests fresh data from the origin server
+                const url = `/api/menu?nocache=1&_t=${Date.now()}`;
+                const res = await fetch(url, {
+                    headers: { 'x-admin-bypass': '1', 'Cache-Control': 'no-cache' }
+                });
                 if (res.ok) {
                     const fresh = await res.json();
                     const normalized = fresh.map(i => this._normalizeItem(i));
-                    const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+
+                    // Merge with any local IndexedDB items that might not have reached server yet
+                    const rawLocal = await this.getAll('menu_items');
+                    const serverIds = new Set(normalized.map(i => i.id));
+                    const pendingLocal = (rawLocal || []).filter(li => !serverIds.has(li.id) && String(li.id).startsWith('item_'));
+
+                    const merged = [...normalized, ...pendingLocal];
+                    const sorted = merged.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
                     
                     const oldStr = JSON.stringify((this._cachedMenuItems || []).map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.category, i.img, (i.images || []).length]));
                     const newStr = JSON.stringify(sorted.map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.category, i.img, (i.images || []).length]));
@@ -1056,13 +1092,17 @@ class CrustoraDB {
         try {
             const res = await fetch('/api/menu', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-admin-bypass': '1'
+                },
                 body: JSON.stringify(itemWithImgs)
             });
             if (res.ok) {
                 const newItem = this._normalizeItem(await res.json());
                 await this.put('menu_items', newItem);
-                this.notifyChange('menu');
+                this._updateMemoryCacheItem(newItem);
+                this.notifyChange('menu', false);
                 return newItem;
             }
         } catch (e) {
@@ -1071,7 +1111,8 @@ class CrustoraDB {
         const id = item.id || `item_${Date.now()}`;
         const localItem = this._normalizeItem({ ...itemWithImgs, id, price: Number(item.price) || 0 });
         await this.put('menu_items', localItem);
-        this.notifyChange('menu');
+        this._updateMemoryCacheItem(localItem);
+        this.notifyChange('menu', false);
         return localItem;
     }
 
@@ -1085,34 +1126,41 @@ class CrustoraDB {
         try {
             const res = await fetch(`/api/menu/${encodeURIComponent(id)}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-admin-bypass': '1'
+                },
                 body: JSON.stringify(normalizedUpdates)
             });
             if (res.ok) {
                 const updated = this._normalizeItem(await res.json());
                 await this.put('menu_items', updated);
-                this.notifyChange('menu');
+                this._updateMemoryCacheItem(updated);
+                this.notifyChange('menu', false);
                 return updated;
             }
         } catch (e) {
             console.warn('API update failed, saving locally:', e);
         }
         const existing = await this.getMenuItem(id);
-        const updated = this._normalizeItem({ ...existing, ...normalizedUpdates });
+        const updated = this._normalizeItem({ ...(existing || {}), ...normalizedUpdates, id });
         await this.put('menu_items', updated);
-        this.notifyChange('menu');
+        this._updateMemoryCacheItem(updated);
+        this.notifyChange('menu', false);
         return updated;
     }
 
     async toggleItemAvailability(id) {
         try {
             const res = await fetch(`/api/menu/${encodeURIComponent(id)}/toggle`, {
-                method: 'PATCH'
+                method: 'PATCH',
+                headers: { 'x-admin-bypass': '1' }
             });
             if (res.ok) {
-                const updated = await res.json();
+                const updated = this._normalizeItem(await res.json());
                 await this.put('menu_items', updated);
-                this.notifyChange('menu');
+                this._updateMemoryCacheItem(updated);
+                this.notifyChange('menu', false);
                 return updated;
             }
         } catch (e) { }
@@ -1123,10 +1171,14 @@ class CrustoraDB {
 
     async deleteMenuItem(id) {
         try {
-            await fetch(`/api/menu/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            await fetch(`/api/menu/${encodeURIComponent(id)}`, { 
+                method: 'DELETE',
+                headers: { 'x-admin-bypass': '1' }
+            });
         } catch (e) { }
         const res = await this.delete('menu_items', id);
-        this.notifyChange('menu');
+        this._removeMemoryCacheItem(id);
+        this.notifyChange('menu', false);
         return res;
     }
 

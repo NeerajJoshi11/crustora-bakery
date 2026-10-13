@@ -83,26 +83,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ----------------------------------------------------
-    // 2. Tab Navigation
+    // 2. Tab Navigation & State Persistence
     // ----------------------------------------------------
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
+    function switchTab(targetTab) {
+        if (!targetTab) targetTab = 'overview';
+        tabButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === targetTab));
+        tabContents.forEach(c => c.classList.toggle('active', c.id === `tab-${targetTab}`));
+        try { 
+            sessionStorage.setItem('crustora_admin_active_tab', targetTab);
+            if (history.replaceState) {
+                history.replaceState(null, '', `#${targetTab}`);
+            }
+        } catch(e) {}
+
+        if (targetTab === 'menu') renderMenuItems(true);
+        if (targetTab === 'categories') renderCategories(true);
+        if (targetTab === 'orders') renderOrders(true);
+        if (targetTab === 'overview') renderOverview();
+    }
+
     tabButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const targetTab = btn.getAttribute('data-tab');
-
-            tabButtons.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
-            btn.classList.add('active');
-            const targetContent = document.getElementById(`tab-${targetTab}`);
-            if (targetContent) targetContent.classList.add('active');
-
-            if (targetTab === 'menu') renderMenuItems();
-            if (targetTab === 'categories') renderCategories();
-            if (targetTab === 'orders') renderOrders();
-            if (targetTab === 'overview') renderOverview();
+            switchTab(targetTab);
         });
     });
 
@@ -1042,10 +1048,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             showToast(`Added "${name}" to the menu!`, 'success');
         }
 
+        currentCategoryFilter = 'ALL';
         closeMenuModal();
-        renderMenuItems(true);
-        renderCategories();
-        renderOverview();
+        await renderMenuItems(true);
+        await renderCategories();
+        await renderOverview();
     });
 
     // ----------------------------------------------------
@@ -1591,16 +1598,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     function loadAllData() {
-        const activeTab = document.querySelector('.admin-tabs .tab-btn.active')?.getAttribute('data-tab') || 'overview';
+        const savedTab = sessionStorage.getItem('crustora_admin_active_tab');
+        const hashTab = (window.location.hash || '').replace('#', '');
+        const activeTab = hashTab || savedTab || document.querySelector('.admin-tabs .tab-btn.active')?.getAttribute('data-tab') || 'overview';
         
-        // Fast parallel KPI refresh
+        switchTab(activeTab);
         renderOverviewKpis();
-        
-        // Render only the currently visible tab for maximum UI responsiveness
-        if (activeTab === 'menu') renderMenuItems();
-        else if (activeTab === 'categories') renderCategories();
-        else if (activeTab === 'orders') renderOrders();
-        else if (activeTab === 'overview') renderOverview();
     }
 
     // Helper: Escape HTML string
