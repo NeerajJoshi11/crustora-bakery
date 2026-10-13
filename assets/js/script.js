@@ -135,6 +135,16 @@ productGrid.addEventListener('click', (e) => {
         return;
     }
 
+    // 3b. Share Button on Card Click
+    const cardShareBtn = e.target.closest('.btn-card-share');
+    if (cardShareBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const itemId = cardShareBtn.getAttribute('data-share-id') || cardShareBtn.closest('.product-card')?.getAttribute('data-id');
+        if (itemId) openShareModal(itemId);
+        return;
+    }
+
     // 4. Click on Card Image Wrapper or Title -> Opens Full Quick View & Gallery Modal!
     const trigger = e.target.closest('.card-img-wrapper') || e.target.closest('h3');
     if (trigger) {
@@ -507,6 +517,9 @@ function applyCatalogData(items, categories, tabsContainer, gridContainer, force
 
     // Update Floating Category Menu Drawer & Badge
     updateCategoryDrawerData();
+
+    // Check if deep link opened the page with ?item=...
+    checkUrlProductDeepLink();
 }
 
 async function renderMenu(forceRedraw = false) {
@@ -632,7 +645,18 @@ function renderCategory(items, categoryTitle = '') {
             <p>${escapeHtml(item.desc || '')}</p>
             <div class="price-row">
                 <span class="price">${priceText}</span>
-                ${buttonHtml}
+                <div class="card-btn-group">
+                    <button type="button" class="btn-card-share" data-share-id="${item.id}" aria-label="Share ${escapeHtml(item.name)}" title="Share this treat">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                    </button>
+                    ${buttonHtml}
+                </div>
             </div>
         `;
         gridContainer.appendChild(div);
@@ -792,6 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMenu();
     initCategoryRailControls();
     initSearch();
+    checkUrlProductDeepLink();
 
     // Initialize Interactive Sliders and Effects
     initHeroSlider();
@@ -1625,6 +1650,209 @@ if (qvWaDirectBtn) {
         const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
         window.open(url, '_blank');
     });
+}
+
+const qvShareBtn = document.getElementById('qvShareBtn');
+if (qvShareBtn) {
+    qvShareBtn.addEventListener('click', () => {
+        if (!qvCurrentItem) return;
+        openShareModal(qvCurrentItem.id);
+    });
+}
+
+// =========================================================
+// Interactive Product Share Feature & Deep-Linking System
+// =========================================================
+const shareModal = document.getElementById('productShareModal');
+const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+const shareModalBackdrop = document.getElementById('shareModalBackdrop');
+const sharePreviewImg = document.getElementById('sharePreviewImg');
+const sharePreviewName = document.getElementById('sharePreviewName');
+const sharePreviewCategory = document.getElementById('sharePreviewCategory');
+const sharePreviewPrice = document.getElementById('sharePreviewPrice');
+const shareLinkInput = document.getElementById('shareLinkInput');
+const shareLinkCopyBtn = document.getElementById('shareLinkCopyBtn');
+const shareWaBtn = document.getElementById('shareWaBtn');
+const shareCopyBtn = document.getElementById('shareCopyBtn');
+const shareTelegramBtn = document.getElementById('shareTelegramBtn');
+const shareTwitterBtn = document.getElementById('shareTwitterBtn');
+const shareFbBtn = document.getElementById('shareFbBtn');
+const shareNativeBtn = document.getElementById('shareNativeBtn');
+
+let currentShareItem = null;
+
+function getProductShareUrl(item) {
+    const origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
+    const path = window.location.pathname || '/';
+    return `${origin}${path}?item=${encodeURIComponent(item.id)}`;
+}
+
+async function openShareModal(itemId) {
+    if (!shareModal) return;
+    const item = allMenuItemsCache.find(i => i.id === itemId) || await db.getMenuItem(itemId);
+    if (!item) return;
+
+    currentShareItem = item;
+    const shareUrl = getProductShareUrl(item);
+
+    // Set preview info
+    if (sharePreviewName) sharePreviewName.textContent = item.name;
+    if (sharePreviewCategory) sharePreviewCategory.textContent = item.category || 'Bakery';
+    if (sharePreviewPrice) sharePreviewPrice.textContent = item.price ? `₹${item.price}` : 'Pre-order';
+    if (sharePreviewImg) {
+        const imgs = Array.isArray(item.images) && item.images.length > 0 ? item.images : (item.img ? [item.img] : ['assets/images/bento_cake.png']);
+        sharePreviewImg.src = imgs[0] || 'assets/images/bento_cake.png';
+        sharePreviewImg.alt = item.name;
+    }
+    if (shareLinkInput) {
+        shareLinkInput.value = shareUrl;
+    }
+
+    resetCopyButtons();
+
+    shareModal.classList.add('open');
+    shareModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeShareModal() {
+    if (!shareModal) return;
+    shareModal.classList.remove('open');
+    shareModal.setAttribute('aria-hidden', 'true');
+}
+
+if (closeShareModalBtn) closeShareModalBtn.addEventListener('click', closeShareModal);
+if (shareModalBackdrop) shareModalBackdrop.addEventListener('click', closeShareModal);
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && shareModal && shareModal.classList.contains('open')) {
+        closeShareModal();
+    }
+});
+
+function resetCopyButtons() {
+    const iconWrap = document.getElementById('shareCopyIconWrap');
+    const label = document.getElementById('shareCopyLabel');
+    if (iconWrap) iconWrap.classList.remove('copied');
+    if (label) label.textContent = 'Copy Link';
+    if (shareLinkCopyBtn) shareLinkCopyBtn.textContent = 'Copy';
+}
+
+async function copyShareLinkToClipboard() {
+    if (!currentShareItem) return;
+    const shareUrl = getProductShareUrl(currentShareItem);
+    try {
+        await navigator.clipboard.writeText(shareUrl);
+        const iconWrap = document.getElementById('shareCopyIconWrap');
+        const label = document.getElementById('shareCopyLabel');
+        if (iconWrap) iconWrap.classList.add('copied');
+        if (label) label.textContent = 'Copied! ✓';
+        if (shareLinkCopyBtn) shareLinkCopyBtn.textContent = 'Copied! ✓';
+        showToast(`📋 Link for "${currentShareItem.name}" copied to clipboard!`, 'success');
+        setTimeout(resetCopyButtons, 2500);
+    } catch(err) {
+        if (shareLinkInput) {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            showToast('📋 Link copied to clipboard!', 'success');
+        }
+    }
+}
+
+if (shareCopyBtn) shareCopyBtn.addEventListener('click', copyShareLinkToClipboard);
+if (shareLinkCopyBtn) shareLinkCopyBtn.addEventListener('click', copyShareLinkToClipboard);
+
+if (shareWaBtn) {
+    shareWaBtn.addEventListener('click', () => {
+        if (!currentShareItem) return;
+        const url = getProductShareUrl(currentShareItem);
+        const priceStr = currentShareItem.price ? ` (₹${currentShareItem.price})` : '';
+        const text = `Hey! 🍰 Check out this delicious "${currentShareItem.name}"${priceStr} from Crustora Bakery:\n${url}`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    });
+}
+
+if (shareTelegramBtn) {
+    shareTelegramBtn.addEventListener('click', () => {
+        if (!currentShareItem) return;
+        const url = getProductShareUrl(currentShareItem);
+        const text = `Check out "${currentShareItem.name}" from Crustora Bakery! 🍰✨`;
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+    });
+}
+
+if (shareTwitterBtn) {
+    shareTwitterBtn.addEventListener('click', () => {
+        if (!currentShareItem) return;
+        const url = getProductShareUrl(currentShareItem);
+        const text = `Craving this sweet delight! 🍰 "${currentShareItem.name}" from @crustoraa_`;
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    });
+}
+
+if (shareFbBtn) {
+    shareFbBtn.addEventListener('click', () => {
+        if (!currentShareItem) return;
+        const url = getProductShareUrl(currentShareItem);
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+    });
+}
+
+if (shareNativeBtn) {
+    shareNativeBtn.addEventListener('click', async () => {
+        if (!currentShareItem) return;
+        const url = getProductShareUrl(currentShareItem);
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${currentShareItem.name} | Crustora Bakery`,
+                    text: `Check out ${currentShareItem.name} from Crustora Bakery! 🍰✨`,
+                    url: url
+                });
+            } catch(e) { }
+        } else {
+            copyShareLinkToClipboard();
+        }
+    });
+}
+
+// Deep Linking: Auto-scroll & Auto-open Product if ?item=... is in the URL
+let deepLinkHandled = false;
+function checkUrlProductDeepLink() {
+    if (deepLinkHandled) return;
+    try {
+        const params = new URLSearchParams(window.location.search);
+        let itemId = params.get('item') || params.get('product');
+        if (!itemId && window.location.hash) {
+            const h = window.location.hash.replace('#', '');
+            if (h.startsWith('item_')) itemId = h;
+        }
+        if (!itemId) return;
+
+        const attemptOpen = (retries = 15) => {
+            if (allMenuItemsCache && allMenuItemsCache.length > 0) {
+                const found = allMenuItemsCache.find(i => i.id === itemId);
+                if (found) {
+                    deepLinkHandled = true;
+                    if (found.category) {
+                        const catBtn = document.querySelector(`.menu-tab-btn[data-cat="${CSS.escape(found.category)}"]`);
+                        if (catBtn && !catBtn.classList.contains('active')) {
+                            catBtn.click();
+                        }
+                    }
+                    const menuSection = document.getElementById('menu');
+                    if (menuSection) {
+                        menuSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    setTimeout(() => openProductQuickView(itemId), 400);
+                    return;
+                }
+            }
+            if (retries > 0) {
+                setTimeout(() => attemptOpen(retries - 1), 200);
+            }
+        };
+        attemptOpen();
+    } catch(e) { }
 }
 
 // =========================================================
