@@ -1,6 +1,5 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
-import { handleApiRequest } from './server/api.js';
 
 export default defineConfig({
   plugins: [
@@ -9,6 +8,7 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
           if (req.url && req.url.startsWith('/api')) {
+            const { handleApiRequest } = await import('./server/api.js');
             await handleApiRequest(req, res);
           } else {
             next();
