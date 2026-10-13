@@ -1,6 +1,5 @@
 import zlib from 'zlib';
 import crypto from 'crypto';
-import sharp from 'sharp';
 import { query } from './db.js';
 import { runMigrations } from './migrate.js';
 
@@ -39,27 +38,8 @@ export function invalidateServerCache() {
     cachedImageBuffers.clear();
 }
 
-// Compress incoming data URL with sharp before DB storage
+// Validates incoming data URL before DB storage (client already pre-compresses on Canvas)
 async function compressUploadDataUrl(dataUrl) {
-    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
-        return dataUrl;
-    }
-    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return dataUrl;
-    try {
-        const inputBuf = Buffer.from(match[2], 'base64');
-        if (inputBuf.length > 25 * 1024) {
-            const compressed = await sharp(inputBuf)
-                .resize(600, 600, { fit: 'inside', withoutEnlargement: true })
-                .webp({ quality: 75 })
-                .toBuffer();
-            if (compressed.length < inputBuf.length) {
-                return `data:image/webp;base64,${compressed.toString('base64')}`;
-            }
-        }
-    } catch (e) {
-        console.warn('Image upload compression warning:', e.message);
-    }
     return dataUrl;
 }
 
