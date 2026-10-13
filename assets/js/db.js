@@ -9,15 +9,17 @@ const DB_VERSION = 3;
 
 // Default Seed Data for Categories
 export const DEFAULT_CATEGORIES = [
-    { id: "cat_cakes", name: "Cakes", desc: "Freshly baked personal bento and celebration cakes", displayOrder: 1 },
+    { id: "cat_brownies", name: "Brownies", desc: "Fudgy, dense chocolate and roasted almond brownies", displayOrder: 1 },
     { id: "cat_cupcakes", name: "Cupcakes & Muffins", desc: "Fluffy cupcakes and double chocolate muffins", displayOrder: 2 },
-    { id: "cat_tub_jar", name: "Tub & Jar Cakes", desc: "Layered gourmet cakes in reusable tubs and glass jars", displayOrder: 3 },
-    { id: "cat_strawberry", name: "Strawberry Special", desc: "Seasonal strawberry treats dipped in Belgian chocolate", displayOrder: 4 },
-    { id: "cat_brownies", name: "Brownies", desc: "Fudgy, dense chocolate and roasted almond brownies", displayOrder: 5 },
-    { id: "cat_tea_cakes", name: "Tea Cakes", desc: "Soft almond, chocolate, and marble loaf cakes for tea time", displayOrder: 6 },
-    { id: "cat_chocolates", name: "Chocolates", desc: "Handmade premium assorted and customized chocolate boxes", displayOrder: 7 },
-    { id: "cat_candles", name: "Candles", desc: "Aesthetic pastel scented soy wax and floral decorative candles", displayOrder: 8 },
-    { id: "cat_hampers", name: "Hampers & Combos", desc: "Luxury gift hampers and celebration combo packages", displayOrder: 9 }
+    { id: "cat_cakes", name: "Cakes", desc: "Freshly baked personal bento and celebration cakes", displayOrder: 3 },
+    { id: "cat_tea_cakes", name: "Tea Cakes", desc: "Soft almond, chocolate, and marble loaf cakes for tea time", displayOrder: 4 },
+    { id: "cat_1791804571335_ezal", name: "Bloom Theory", desc: "Everlasting handmade floral bouquets crafted with love. 💐", displayOrder: 5 },
+    { id: "cat_candles", name: "Candles", desc: "Aesthetic pastel scented soy wax and floral decorative candles", displayOrder: 6 },
+    { id: "cat_1791804641993_w9mw", name: "Little charm", desc: "Cute, handmade keychains, bag charms, and tiny keepsakes. ✨", displayOrder: 7 },
+    { id: "cat_chocolates", name: "Chocolates", desc: "Handmade premium assorted and customized chocolate boxes", displayOrder: 8 },
+    { id: "cat_hampers", name: "Hampers & Combos", desc: "Luxury gift hampers and celebration combo packages", displayOrder: 9 },
+    { id: "cat_tub_jar", name: "Tub & Jar Cakes", desc: "Layered gourmet cakes in reusable tubs and glass jars", displayOrder: 10 },
+    { id: "cat_strawberry", name: "Strawberry Special", desc: "Seasonal strawberry treats dipped in Belgian chocolate", displayOrder: 11 }
 ];
 
 // Default Seed Data for Menu Items
@@ -391,6 +393,54 @@ export const DEFAULT_MENU_ITEMS = [
         badge: "Best Gifting",
         isAvailable: true,
         createdAt: "2026-02-03T21:00:00.000Z"
+    },
+    {
+        id: "item_blush_lily_bouquet",
+        name: "Blush Lily Bouquet",
+        category: "Bloom Theory",
+        desc: "Everlasting handmade floral bouquet crafted with love and soft blush tones.",
+        price: 449,
+        img: "assets/images/bento_cake.png",
+        images: ["assets/images/bento_cake.png"],
+        badge: "Handmade",
+        isAvailable: true,
+        createdAt: "2026-02-04T10:00:00.000Z"
+    },
+    {
+        id: "item_spideys_sweetheart",
+        name: "Spidey's Sweetheart Bouquet",
+        category: "Bloom Theory",
+        desc: "Everlasting handmade floral bouquet inspired by magical moments.",
+        price: 699,
+        img: "assets/images/gift_hamper_1775410716144.png",
+        images: ["assets/images/gift_hamper_1775410716144.png"],
+        badge: "Bestseller",
+        isAvailable: true,
+        createdAt: "2026-02-04T11:00:00.000Z"
+    },
+    {
+        id: "item_cherry_crush_keychain",
+        name: "Cherry Crush Keychains 🍒",
+        category: "Little charm",
+        desc: "Cute handmade cherry charm for bags, backpacks, and keys.",
+        price: 69,
+        img: "assets/images/scented_candles_1775410699647.png",
+        images: ["assets/images/scented_candles_1775410699647.png"],
+        badge: "Trending",
+        isAvailable: true,
+        createdAt: "2026-02-05T10:00:00.000Z"
+    },
+    {
+        id: "item_sunny_bloom_keychain",
+        name: "Sunny Bloom Keychain 🌻",
+        category: "Little charm",
+        desc: "Handmade cheerful sunflower keepsake keychain with premium metal ring.",
+        price: 49,
+        img: "assets/images/scented_candles_1775410699647.png",
+        images: ["assets/images/scented_candles_1775410699647.png"],
+        badge: "Cute Gift",
+        isAvailable: true,
+        createdAt: "2026-02-05T11:00:00.000Z"
     }
 ];
 
@@ -498,6 +548,13 @@ class CrustoraDB {
         this._lastMenuRevalidateTime = 0;
         this._lastCategoriesRevalidateTime = 0;
 
+        // Clear any old/corrupted localStorage menu cache that stripped images
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.removeItem('crustora_menu_cache');
+            }
+        } catch (e) { }
+
         // Multi-Tab Realtime Broadcast Channel
         try {
             this._syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('crustora_sync_bus') : null;
@@ -559,11 +616,12 @@ class CrustoraDB {
                 }
             };
 
-            request.onsuccess = async (e) => {
+            request.onsuccess = (e) => {
                 this.db = e.target.result;
                 this.initialized = true;
-                await this.seedDefaultsIfNeeded();
                 resolve();
+                // Non-blocking background seed
+                this.seedDefaultsIfNeeded().catch(console.warn);
             };
 
             request.onerror = (e) => {
@@ -596,16 +654,39 @@ class CrustoraDB {
             this.getAll('menu_items'),
             this.getAll('categories')
         ]);
-        if (items.length === 0) {
-            for (const item of DEFAULT_MENU_ITEMS) {
-                await this.put('menu_items', item);
-            }
+        if (!items || items.length === 0) {
+            await this.putBulk('menu_items', DEFAULT_MENU_ITEMS);
         }
-        if (cats.length === 0) {
-            for (const cat of DEFAULT_CATEGORIES) {
-                await this.put('categories', cat);
-            }
+        if (!cats || cats.length === 0) {
+            await this.putBulk('categories', DEFAULT_CATEGORIES);
         }
+    }
+
+    // High-speed Single-Transaction Bulk Put (1 transaction instead of N separate transactions)
+    async putBulk(storeName, items) {
+        if (!items || !items.length) return;
+        await this.init();
+        if (!this.isIndexedDBSupported || !this.db || !this.db.objectStoreNames.contains(storeName)) {
+            try {
+                localStorage.setItem(`crustora_${storeName}`, JSON.stringify(items));
+            } catch (e) { }
+            return;
+        }
+
+        return new Promise((resolve) => {
+            try {
+                const tx = this.db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                for (const item of items) {
+                    store.put(item);
+                }
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => resolve();
+            } catch (err) {
+                console.warn('IDB putBulk error for', storeName, err);
+                resolve();
+            }
+        });
     }
 
     // Local IndexedDB Cache Transactions
@@ -701,6 +782,23 @@ class CrustoraDB {
     }
 
     // --- CATEGORIES CRUD (Instant Synchronous Cache-First + Background Revalidation) ---
+    getCachedCategoriesSync() {
+        if (this._cachedCategories && this._cachedCategories.length > 0) {
+            return this._cachedCategories;
+        }
+        try {
+            const stored = localStorage.getItem('crustora_categories_cache');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    this._cachedCategories = parsed;
+                    return parsed;
+                }
+            }
+        } catch (e) { }
+        return DEFAULT_CATEGORIES;
+    }
+
     async getCategories() {
         if (this._cachedCategories && this._cachedCategories.length > 0) {
             this._revalidateCategoriesInBackground();
@@ -708,17 +806,11 @@ class CrustoraDB {
         }
 
         // 1. Instant synchronous memory/localStorage cache read (0ms)
-        try {
-            const stored = localStorage.getItem('crustora_categories_cache');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    this._cachedCategories = parsed;
-                    this._revalidateCategoriesInBackground();
-                    return parsed;
-                }
-            }
-        } catch (e) { }
+        const syncCats = this.getCachedCategoriesSync();
+        if (syncCats && syncCats.length > 0 && syncCats !== DEFAULT_CATEGORIES) {
+            this._revalidateCategoriesInBackground();
+            return syncCats;
+        }
 
         // 2. Fast local IndexedDB read
         const local = await this.getAll('categories');
@@ -741,7 +833,7 @@ class CrustoraDB {
             const res = await fetch('/api/categories');
             if (res.ok) {
                 const cats = await res.json();
-                for (const cat of cats) await this.put('categories', cat);
+                await this.putBulk('categories', cats);
                 this._cachedCategories = cats;
                 try { localStorage.setItem('crustora_categories_cache', JSON.stringify(cats)); } catch (e) {}
                 return cats;
@@ -756,20 +848,21 @@ class CrustoraDB {
         return finalCats;
     }
 
-    _revalidateCategoriesInBackground() {
+    _revalidateCategoriesInBackground(force = false) {
         if (this._isRevalidatingCategories) return;
-        if (Date.now() - this._lastCategoriesRevalidateTime < 15000) return;
+        if (!force && Date.now() - this._lastCategoriesRevalidateTime < 15 * 60 * 1000) return;
         this._isRevalidatingCategories = true;
         this._lastCategoriesRevalidateTime = Date.now();
         setTimeout(async () => {
             try {
-                const res = await fetch('/api/categories');
+                const url = force ? `/api/categories?nocache=1&_t=${Date.now()}` : '/api/categories';
+                const res = await fetch(url);
                 if (res.ok) {
                     const fresh = await res.json();
                     const oldStr = JSON.stringify(this._cachedCategories || []);
                     const newStr = JSON.stringify(fresh);
                     if (oldStr !== newStr) {
-                        for (const cat of fresh) await this.put('categories', cat);
+                        await this.putBulk('categories', fresh);
                         this._cachedCategories = fresh;
                         try { localStorage.setItem('crustora_categories_cache', JSON.stringify(fresh)); } catch (e) {}
                         this.notifyChange('categories', false);
@@ -777,7 +870,7 @@ class CrustoraDB {
                 }
             } catch (e) { }
             this._isRevalidatingCategories = false;
-        }, 60);
+        }, 50);
     }
 
     async getCategory(id) {
@@ -869,58 +962,48 @@ class CrustoraDB {
         };
     }
 
-    // --- MENU ITEMS CRUD (Instant Synchronous Cache-First + Background Revalidation) ---
-    async getMenuItems() {
+    // Synchronous memory getter (0ms instant return if already loaded in memory)
+    getCachedMenuItemsSync() {
+        if (this._cachedMenuItems && this._cachedMenuItems.length > 0) {
+            return this._cachedMenuItems;
+        }
+        return null;
+    }
+
+    // --- MENU ITEMS CRUD (IndexedDB Cache-First + Background Revalidation) ---
+    async getMenuItems(force = false) {
+        if (force) {
+            return await this._fetchAndCacheMenuItems(true);
+        }
         if (this._cachedMenuItems && this._cachedMenuItems.length > 0) {
             this._revalidateMenuItemsInBackground();
             return this._cachedMenuItems;
         }
 
-        // 1. Instant synchronous memory/localStorage cache read (0ms)
-        try {
-            const stored = localStorage.getItem('crustora_menu_cache');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    const normalized = parsed.map(i => this._normalizeItem(i))
-                        .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
-                    this._cachedMenuItems = normalized;
-                    this._revalidateMenuItemsInBackground();
-                    return normalized;
-                }
-            }
-        } catch (e) { }
-
-        // 2. Fast local IndexedDB read
+        // 1. Fast local IndexedDB read (preserves full uploaded images)
         const rawItems = await this.getAll('menu_items');
         if (rawItems && rawItems.length > 0) {
             const normalized = rawItems.map(i => this._normalizeItem(i))
                 .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
             this._cachedMenuItems = normalized;
-            try { localStorage.setItem('crustora_menu_cache', JSON.stringify(normalized)); } catch (e) {}
             this._revalidateMenuItemsInBackground();
             return normalized;
         }
 
-        // 3. Fallback to DEFAULT_MENU_ITEMS immediately so UI NEVER waits or stays blank
-        const defaultNorm = DEFAULT_MENU_ITEMS.map(i => this._normalizeItem(i))
-            .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
-        this._cachedMenuItems = defaultNorm;
-        try { localStorage.setItem('crustora_menu_cache', JSON.stringify(defaultNorm)); } catch (e) {}
-        this._revalidateMenuItemsInBackground();
-        return defaultNorm;
+        // 2. Fallback to API with local cache
+        return await this._fetchAndCacheMenuItems();
     }
 
-    async _fetchAndCacheMenuItems() {
+    async _fetchAndCacheMenuItems(force = false) {
         try {
-            const res = await fetch('/api/menu');
+            const url = force ? `/api/menu?nocache=1&_t=${Date.now()}` : '/api/menu';
+            const res = await fetch(url);
             if (res.ok) {
                 const items = await res.json();
                 const normalized = items.map(i => this._normalizeItem(i));
-                for (const item of normalized) await this.put('menu_items', item);
+                await this.putBulk('menu_items', normalized);
                 const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
                 this._cachedMenuItems = sorted;
-                try { localStorage.setItem('crustora_menu_cache', JSON.stringify(sorted)); } catch (e) {}
                 return sorted;
             }
         } catch (e) {
@@ -931,36 +1014,35 @@ class CrustoraDB {
             .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
         const finalItems = items.length > 0 ? items : DEFAULT_MENU_ITEMS;
         this._cachedMenuItems = finalItems;
-        try { localStorage.setItem('crustora_menu_cache', JSON.stringify(finalItems)); } catch (e) {}
         return finalItems;
     }
 
-    _revalidateMenuItemsInBackground() {
+    _revalidateMenuItemsInBackground(force = false) {
         if (this._isRevalidatingMenu) return;
-        if (Date.now() - this._lastMenuRevalidateTime < 15000) return;
+        if (!force && Date.now() - this._lastMenuRevalidateTime < 5 * 60 * 1000) return;
         this._isRevalidatingMenu = true;
         this._lastMenuRevalidateTime = Date.now();
         setTimeout(async () => {
             try {
-                const res = await fetch('/api/menu');
+                const url = force ? `/api/menu?nocache=1&_t=${Date.now()}` : '/api/menu';
+                const res = await fetch(url);
                 if (res.ok) {
                     const fresh = await res.json();
                     const normalized = fresh.map(i => this._normalizeItem(i));
                     const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
                     
-                    const oldStr = JSON.stringify((this._cachedMenuItems || []).map(i => ({ id: i.id, name: i.name, p: i.price, a: i.isAvailable, e: i.egglessAvailable, c: i.category })));
-                    const newStr = JSON.stringify(sorted.map(i => ({ id: i.id, name: i.name, p: i.price, a: i.isAvailable, e: i.egglessAvailable, c: i.category })));
+                    const oldStr = JSON.stringify((this._cachedMenuItems || []).map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.category, i.img, (i.images || []).length]));
+                    const newStr = JSON.stringify(sorted.map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.category, i.img, (i.images || []).length]));
                     
                     if (oldStr !== newStr) {
-                        for (const item of sorted) await this.put('menu_items', item);
+                        await this.putBulk('menu_items', sorted);
                         this._cachedMenuItems = sorted;
-                        try { localStorage.setItem('crustora_menu_cache', JSON.stringify(sorted)); } catch (e) {}
                         this.notifyChange('menu', false);
                     }
                 }
             } catch (e) { }
             this._isRevalidatingMenu = false;
-        }, 60);
+        }, 50);
     }
 
     async getMenuItem(id) {

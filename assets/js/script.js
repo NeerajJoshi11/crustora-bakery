@@ -377,7 +377,7 @@ let currentMenuCategories = {};
 let allMenuItemsCache = [];
 let lastRenderedFingerprint = '';
 
-// Instant Shimmer Skeleton Renderer
+// Instant Shimmer Skeleton Renderer (only used if genuinely 0 data exists)
 function renderSkeletonCards(container, count = 6) {
     if (!container) return;
     let html = '';
@@ -402,22 +402,7 @@ function renderSkeletonCards(container, count = 6) {
     container.innerHTML = html;
 }
 
-async function renderMenu(forceRedraw = false) {
-    const tabsContainer = document.getElementById('menuTabs');
-    const gridContainer = document.getElementById('productGrid');
-
-    if (!tabsContainer || !gridContainer) return;
-
-    // Show instant luxury skeletons if grid is currently empty
-    if (!gridContainer.children.length) {
-        renderSkeletonCards(gridContainer, 6);
-    }
-
-    let [items, categories] = await Promise.all([
-        db.getMenuItems(),
-        db.getCategories()
-    ]);
-
+function applyCatalogData(items, categories, tabsContainer, gridContainer, forceRedraw = false) {
     allMenuItemsCache = items || [];
 
     // Sort categories by displayOrder
@@ -455,7 +440,7 @@ async function renderMenu(forceRedraw = false) {
     const newFingerprint = JSON.stringify({
         catOrder: categoryNames,
         active: activeCategory,
-        items: (currentMenuCategories[activeCategory] || []).map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.badge])
+        items: (currentMenuCategories[activeCategory] || []).map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.badge, i.img])
     });
 
     const hasSkeletons = !!gridContainer.querySelector('.skeleton-card');
@@ -501,6 +486,35 @@ async function renderMenu(forceRedraw = false) {
 
     // Render Grid for active category
     renderCategory(currentMenuCategories[activeCategory], activeCategory);
+}
+
+async function renderMenu(forceRedraw = false) {
+    const tabsContainer = document.getElementById('menuTabs');
+    const gridContainer = document.getElementById('productGrid');
+
+    if (!tabsContainer || !gridContainer) return;
+
+    // 1. Instant 0ms synchronous render from memory/localStorage/default seeds
+    const syncItems = db.getCachedMenuItemsSync();
+    const syncCats = db.getCachedCategoriesSync();
+
+    if (syncItems && syncItems.length > 0 && syncCats && syncCats.length > 0) {
+        applyCatalogData(syncItems, syncCats, tabsContainer, gridContainer, forceRedraw);
+    } else if (!gridContainer.children.length) {
+        // Fallback only if no data at all exists
+        renderSkeletonCards(gridContainer, 6);
+    }
+
+    // 2. Seamless background revalidation with latest DB data
+    try {
+        const [items, categories] = await Promise.all([
+            db.getMenuItems(),
+            db.getCategories()
+        ]);
+        applyCatalogData(items, categories, tabsContainer, gridContainer, forceRedraw);
+    } catch (err) {
+        console.warn('Background menu sync:', err);
+    }
 }
 
 function renderCategory(items, categoryTitle = '') {
@@ -620,16 +634,14 @@ document.addEventListener('visibilitychange', () => {
         renderMenu(false);
     }
 });
-window.addEventListener('focus', () => {
-    renderMenu(false);
-});
-
-// Periodic gentle background revalidation (every 20s) so live updates sync seamlessly
-setInterval(() => {
-    if (document.visibilityState === 'visible') {
-        db.getMenuItems(); // Revalidates in background; triggers crustora_db_change if changes exist
+// Gentle background revalidation only after extended inactivity (> 15 minutes)
+let lastActiveRevalidate = Date.now();
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && (Date.now() - lastActiveRevalidate > 15 * 60 * 1000)) {
+        lastActiveRevalidate = Date.now();
+        db.getMenuItems();
     }
-}, 20000);
+});
 
 // Category Rail Scroll Controls & Smooth Mouse Wheel
 function initCategoryRailControls() {

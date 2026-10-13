@@ -195,8 +195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeMenuModalBtn = document.getElementById('closeMenuModalBtn');
     const cancelMenuModalBtn = document.getElementById('cancelMenuModalBtn');
 
-    async function renderMenuItems() {
-        const items = await db.getMenuItems();
+    async function renderMenuItems(force = false) {
+        const items = await db.getMenuItems(force);
         adminMenuItemsMap.clear();
         items.forEach(i => adminMenuItemsMap.set(i.id, i));
 
@@ -1043,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         closeMenuModal();
-        renderMenuItems();
+        renderMenuItems(true);
         renderCategories();
         renderOverview();
     });
