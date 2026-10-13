@@ -1027,32 +1027,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     menuItemForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const id = document.getElementById('menuItemId').value;
-        const name = document.getElementById('itemInputName').value.trim();
-        const category = document.getElementById('itemInputCategory').value;
-        const price = Number(document.getElementById('itemInputPrice').value);
-        const desc = document.getElementById('itemInputDesc').value.trim();
-        const badge = document.getElementById('itemInputBadge').value.trim();
-        const isAvailable = document.getElementById('itemStockCheckbox').checked;
-        const egglessAvailable = document.getElementById('itemEgglessCheckbox').checked;
-        
-        // Multi-image payload
-        const images = currentModalImages.length > 0 ? [...currentModalImages] : [DEFAULT_ITEM_IMG];
-        const img = images[0] || DEFAULT_ITEM_IMG;
-
-        if (id) {
-            await db.updateMenuItem(id, { name, category, price, desc, badge, isAvailable, egglessAvailable, img, images });
-            showToast(`Updated "${name}" successfully!`, 'success');
-        } else {
-            await db.addMenuItem({ name, category, price, desc, badge, isAvailable, egglessAvailable, img, images });
-            showToast(`Added "${name}" to the menu!`, 'success');
+        const submitBtn = menuItemForm.querySelector('button[type="submit"]') || menuItemForm.querySelector('.btn-save');
+        if (submitBtn && submitBtn.disabled) return;
+        const originalText = submitBtn ? submitBtn.textContent : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
         }
 
-        currentCategoryFilter = 'ALL';
-        closeMenuModal();
-        await renderMenuItems(true);
-        await renderCategories();
-        await renderOverview();
+        try {
+            const id = document.getElementById('menuItemId').value;
+            const name = document.getElementById('itemInputName').value.trim();
+            const category = document.getElementById('itemInputCategory').value;
+            const price = Number(document.getElementById('itemInputPrice').value);
+            const desc = document.getElementById('itemInputDesc').value.trim();
+            const badge = document.getElementById('itemInputBadge').value.trim();
+            const isAvailable = document.getElementById('itemStockCheckbox').checked;
+            const egglessAvailable = document.getElementById('itemEgglessCheckbox').checked;
+            
+            // Multi-image payload
+            const images = currentModalImages.length > 0 ? [...currentModalImages] : [DEFAULT_ITEM_IMG];
+            const img = images[0] || DEFAULT_ITEM_IMG;
+
+            if (id) {
+                await db.updateMenuItem(id, { name, category, price, desc, badge, isAvailable, egglessAvailable, img, images });
+                showToast(`Updated "${name}" successfully!`, 'success');
+            } else {
+                await db.addMenuItem({ name, category, price, desc, badge, isAvailable, egglessAvailable, img, images });
+                showToast(`Added "${name}" to the menu!`, 'success');
+            }
+
+            currentCategoryFilter = 'ALL';
+            closeMenuModal();
+            await renderMenuItems(true);
+            await renderCategories();
+            await renderOverview();
+        } catch (err) {
+            console.error('Error saving menu item:', err);
+            showToast('Failed to save menu item. Please try again.', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText || 'Save Item';
+            }
+        }
     });
 
     // ----------------------------------------------------

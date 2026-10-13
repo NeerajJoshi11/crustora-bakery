@@ -146,11 +146,11 @@ export const DEFAULT_MENU_ITEMS = [
         createdAt: "2026-01-17T17:00:00.000Z"
     },
     {
-        id: "item_choco_tub_cake",
-        name: "Chocolate Tub Cake",
+        id: "item_1791815990931_t4yo8",
+        name: "Chico fudge tubcake",
         category: "Tub & Jar Cakes",
         desc: "Layered chocolate mud cake, fudge and chocolate crisps in a tub.",
-        price: 289,
+        price: 359,
         img: "assets/images/chocolate_tub_cake_1775410734736.png",
         images: [
             "assets/images/chocolate_tub_cake_1775410734736.png",
@@ -395,8 +395,8 @@ export const DEFAULT_MENU_ITEMS = [
         createdAt: "2026-02-03T21:00:00.000Z"
     },
     {
-        id: "item_blush_lily_bouquet",
-        name: "Blush Lily Bouquet",
+        id: "item_1791805533979_t5qzy",
+        name: "Blush lily bouquet",
         category: "Bloom Theory",
         desc: "Everlasting handmade floral bouquet crafted with love and soft blush tones.",
         price: 449,
@@ -407,8 +407,8 @@ export const DEFAULT_MENU_ITEMS = [
         createdAt: "2026-02-04T10:00:00.000Z"
     },
     {
-        id: "item_spideys_sweetheart",
-        name: "Spidey's Sweetheart Bouquet",
+        id: "item_1791805975824_18kei",
+        name: "Spidey's sweetheart",
         category: "Bloom Theory",
         desc: "Everlasting handmade floral bouquet inspired by magical moments.",
         price: 699,
@@ -419,7 +419,7 @@ export const DEFAULT_MENU_ITEMS = [
         createdAt: "2026-02-04T11:00:00.000Z"
     },
     {
-        id: "item_cherry_crush_keychain",
+        id: "item_1791807059855_4cyco",
         name: "Cherry Crush Keychains 🍒",
         category: "Little charm",
         desc: "Cute handmade cherry charm for bags, backpacks, and keys.",
@@ -431,7 +431,7 @@ export const DEFAULT_MENU_ITEMS = [
         createdAt: "2026-02-05T10:00:00.000Z"
     },
     {
-        id: "item_sunny_bloom_keychain",
+        id: "item_1791806727620_7wgyv",
         name: "Sunny Bloom Keychain 🌻",
         category: "Little charm",
         desc: "Handmade cheerful sunflower keepsake keychain with premium metal ring.",
@@ -655,7 +655,7 @@ class CrustoraDB {
             this.getAll('categories')
         ]);
         if (!items || items.length === 0) {
-            await this.putBulk('menu_items', DEFAULT_MENU_ITEMS);
+            await this.putBulk('menu_items', this._deduplicateItems(DEFAULT_MENU_ITEMS));
         }
         if (!cats || cats.length === 0) {
             await this.putBulk('categories', DEFAULT_CATEGORIES);
@@ -684,6 +684,34 @@ class CrustoraDB {
                 tx.onerror = () => resolve();
             } catch (err) {
                 console.warn('IDB putBulk error for', storeName, err);
+                resolve();
+            }
+        });
+    }
+
+    // High-speed Atomic Replace for a store (clears old items so stale/deleted items don't linger)
+    async setAll(storeName, items) {
+        if (!items) return;
+        await this.init();
+        if (!this.isIndexedDBSupported || !this.db || !this.db.objectStoreNames.contains(storeName)) {
+            try {
+                localStorage.setItem(`crustora_${storeName}`, JSON.stringify(items));
+            } catch (e) { }
+            return;
+        }
+
+        return new Promise((resolve) => {
+            try {
+                const tx = this.db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                store.clear();
+                for (const item of items) {
+                    store.put(item);
+                }
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => resolve();
+            } catch (err) {
+                console.warn('IDB setAll error for', storeName, err);
                 resolve();
             }
         });
@@ -969,10 +997,30 @@ class CrustoraDB {
         };
     }
 
+    _deduplicateItems(items) {
+        if (!Array.isArray(items)) return [];
+        const seenIds = new Set();
+        const seenNames = new Set();
+        const result = [];
+
+        for (const item of items) {
+            if (!item || !item.id) continue;
+            const normId = String(item.id);
+            const nameKey = `${(item.name || '').trim().toLowerCase()}:::${(item.category || '').trim().toLowerCase()}`;
+            if (seenIds.has(normId) || seenNames.has(nameKey)) {
+                continue;
+            }
+            seenIds.add(normId);
+            seenNames.add(nameKey);
+            result.push(item);
+        }
+        return result;
+    }
+
     // Synchronous memory getter (0ms instant return if already loaded in memory)
     getCachedMenuItemsSync() {
         if (this._cachedMenuItems && this._cachedMenuItems.length > 0) {
-            return this._cachedMenuItems;
+            return this._deduplicateItems(this._cachedMenuItems);
         }
         return null;
     }
@@ -986,6 +1034,7 @@ class CrustoraDB {
         } else {
             this._cachedMenuItems.push(item);
         }
+        this._cachedMenuItems = this._deduplicateItems(this._cachedMenuItems);
         this._cachedMenuItems.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
     }
 
@@ -1002,17 +1051,18 @@ class CrustoraDB {
         }
         if (this._cachedMenuItems && this._cachedMenuItems.length > 0) {
             this._revalidateMenuItemsInBackground();
-            return this._cachedMenuItems;
+            return this._deduplicateItems(this._cachedMenuItems);
         }
 
         // 1. Fast local IndexedDB read (preserves full uploaded images)
         const rawItems = await this.getAll('menu_items');
         if (rawItems && rawItems.length > 0) {
-            const normalized = rawItems.map(i => this._normalizeItem(i))
+            const normalized = rawItems.map(i => this._normalizeItem(i));
+            const deduped = this._deduplicateItems(normalized)
                 .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
-            this._cachedMenuItems = normalized;
+            this._cachedMenuItems = deduped;
             this._revalidateMenuItemsInBackground();
-            return normalized;
+            return deduped;
         }
 
         // 2. Fallback to API with local cache
@@ -1027,8 +1077,9 @@ class CrustoraDB {
             if (res.ok) {
                 const items = await res.json();
                 const normalized = items.map(i => this._normalizeItem(i));
-                await this.putBulk('menu_items', normalized);
-                const sorted = normalized.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                const deduped = this._deduplicateItems(normalized);
+                await this.setAll('menu_items', deduped);
+                const sorted = deduped.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
                 this._cachedMenuItems = sorted;
                 return sorted;
             }
@@ -1036,11 +1087,11 @@ class CrustoraDB {
             console.warn('API error, using cached menu items:', e);
         }
         const rawItems = await this.getAll('menu_items');
-        const items = rawItems.map(i => this._normalizeItem(i))
-            .sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
-        const finalItems = items.length > 0 ? items : DEFAULT_MENU_ITEMS;
-        this._cachedMenuItems = finalItems;
-        return finalItems;
+        const items = rawItems.map(i => this._normalizeItem(i));
+        const finalItems = items.length > 0 ? this._deduplicateItems(items) : this._deduplicateItems(DEFAULT_MENU_ITEMS);
+        const sorted = finalItems.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+        this._cachedMenuItems = sorted;
+        return sorted;
     }
 
     _revalidateMenuItemsInBackground(force = false) {
@@ -1058,20 +1109,14 @@ class CrustoraDB {
                 if (res.ok) {
                     const fresh = await res.json();
                     const normalized = fresh.map(i => this._normalizeItem(i));
-
-                    // Merge with any local IndexedDB items that might not have reached server yet
-                    const rawLocal = await this.getAll('menu_items');
-                    const serverIds = new Set(normalized.map(i => i.id));
-                    const pendingLocal = (rawLocal || []).filter(li => !serverIds.has(li.id) && String(li.id).startsWith('item_'));
-
-                    const merged = [...normalized, ...pendingLocal];
-                    const sorted = merged.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
+                    const deduped = this._deduplicateItems(normalized);
+                    const sorted = deduped.sort((a, b) => (a.category || '').localeCompare(b.category || '') || (a.name || '').localeCompare(b.name || ''));
                     
                     const oldStr = JSON.stringify((this._cachedMenuItems || []).map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.category, i.img, (i.images || []).length]));
                     const newStr = JSON.stringify(sorted.map(i => [i.id, i.name, i.price, i.isAvailable, i.egglessAvailable, i.category, i.img, (i.images || []).length]));
                     
                     if (oldStr !== newStr) {
-                        await this.putBulk('menu_items', sorted);
+                        await this.setAll('menu_items', sorted);
                         this._cachedMenuItems = sorted;
                         this.notifyChange('menu', false);
                     }

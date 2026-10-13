@@ -403,7 +403,22 @@ function renderSkeletonCards(container, count = 6) {
 }
 
 function applyCatalogData(items, categories, tabsContainer, gridContainer, forceRedraw = false) {
-    allMenuItemsCache = items || [];
+    // Robust defensive deduplication: deduplicate by ID and (name + category)
+    const seenIds = new Set();
+    const seenNames = new Set();
+    const uniqueItems = [];
+    (items || []).forEach(item => {
+        if (!item || !item.id) return;
+        const normId = String(item.id);
+        const nameKey = `${(item.name || '').trim().toLowerCase()}:::${(item.category || '').trim().toLowerCase()}`;
+        if (seenIds.has(normId) || seenNames.has(nameKey)) {
+            return;
+        }
+        seenIds.add(normId);
+        seenNames.add(nameKey);
+        uniqueItems.push(item);
+    });
+    allMenuItemsCache = uniqueItems;
 
     // Sort categories by displayOrder
     const sortedCategories = (categories || []).sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
@@ -724,14 +739,26 @@ function initSearch() {
             (item.desc || '').toLowerCase().includes(query) ||
             (item.category || '').toLowerCase().includes(query)
         );
+        const seenSearchIds = new Set();
+        const seenSearchNames = new Set();
+        const uniqueFiltered = [];
+        filtered.forEach(item => {
+            if (!item || !item.id) return;
+            const normId = String(item.id);
+            const nameKey = `${(item.name || '').trim().toLowerCase()}:::${(item.category || '').trim().toLowerCase()}`;
+            if (seenSearchIds.has(normId) || seenSearchNames.has(nameKey)) return;
+            seenSearchIds.add(normId);
+            seenSearchNames.add(nameKey);
+            uniqueFiltered.push(item);
+        });
 
         const countText = document.getElementById('catalogCountText');
         if (countText) {
-            countText.textContent = `${filtered.length} found`;
+            countText.textContent = `${uniqueFiltered.length} found`;
         }
 
         const gridContainer = document.getElementById('productGrid');
-        if (filtered.length === 0 && gridContainer) {
+        if (uniqueFiltered.length === 0 && gridContainer) {
             gridContainer.innerHTML = `
                 <div class="empty-catalog-state">
                     <div class="empty-catalog-icon">🔍</div>
@@ -749,7 +776,7 @@ function initSearch() {
             return;
         }
 
-        renderCategory(filtered, `Search: "${query}"`);
+        renderCategory(uniqueFiltered, `Search: "${query}"`);
     });
 }
 

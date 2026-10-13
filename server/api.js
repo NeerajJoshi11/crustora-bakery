@@ -263,7 +263,24 @@ export async function handleApiRequest(req, res) {
                 FROM menu_items
                 ORDER BY category ASC, name ASC;
             `);
-            const items = result.rows.map(row => {
+
+            // Defensive server-side deduplication
+            const seenServerIds = new Set();
+            const seenServerNames = new Set();
+            const uniqueRows = [];
+            for (const row of result.rows) {
+                if (!row || !row.id) continue;
+                const normId = String(row.id);
+                const nameKey = `${(row.name || '').trim().toLowerCase()}:::${(row.category || '').trim().toLowerCase()}`;
+                if (seenServerIds.has(normId) || seenServerNames.has(nameKey)) {
+                    continue;
+                }
+                seenServerIds.add(normId);
+                seenServerNames.add(nameKey);
+                uniqueRows.push(row);
+            }
+
+            const items = uniqueRows.map(row => {
                 let imgs = [];
                 if (Array.isArray(row.images)) {
                     imgs = row.images;
