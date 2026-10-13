@@ -472,6 +472,7 @@ function applyCatalogData(items, categories, tabsContainer, gridContainer, force
             btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 
             renderCategory(currentMenuCategories[catName], catName);
+            updateCategoryDrawerData();
 
             // Retrigger animations
             const productCards = gridContainer.querySelectorAll('.product-card');
@@ -486,6 +487,9 @@ function applyCatalogData(items, categories, tabsContainer, gridContainer, force
 
     // Render Grid for active category
     renderCategory(currentMenuCategories[activeCategory], activeCategory);
+
+    // Update Floating Category Menu Drawer & Badge
+    updateCategoryDrawerData();
 }
 
 async function renderMenu(forceRedraw = false) {
@@ -761,6 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroSlider();
     initReviewsSlider();
     initScrollTopBtn();
+    initFloatingCategoryMenu();
     initCardTilt();
     initCustomizeStudio();
     initMobileNavSpy();
@@ -1035,6 +1040,194 @@ function initScrollTopBtn() {
 
     btn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+// =========================================================
+// Floating Animated Category Menu Drawer / Quick Navigator
+// =========================================================
+let categoryMenuDrawerInitialized = false;
+
+function updateCategoryDrawerData(filterText = '') {
+    const listEl = document.getElementById('categoryDrawerList');
+    const badgeEl = document.getElementById('menuBtnBadge');
+    if (!listEl) return;
+
+    const categoryNames = Object.keys(currentMenuCategories || {});
+    if (badgeEl) {
+        badgeEl.textContent = categoryNames.length;
+    }
+
+    const tabsContainer = document.getElementById('menuTabs');
+    const activeTab = tabsContainer ? tabsContainer.querySelector('.menu-tab-btn.active') : null;
+    const activeCategory = activeTab ? activeTab.getAttribute('data-cat') : (categoryNames[0] || '');
+
+    const query = (filterText || '').toLowerCase().trim();
+    const filteredCats = query
+        ? categoryNames.filter(name => name.toLowerCase().includes(query))
+        : categoryNames;
+
+    if (filteredCats.length === 0) {
+        listEl.innerHTML = `
+            <div class="category-drawer-empty">
+                <p>No collections matching "<strong>${escapeHtml(query)}</strong>"</p>
+            </div>
+        `;
+        return;
+    }
+
+    listEl.innerHTML = filteredCats.map((catName) => {
+        const count = (currentMenuCategories[catName] || []).length;
+        const icon = getCategoryIcon(catName);
+        const isActive = catName === activeCategory;
+
+        return `
+            <button type="button" class="category-drawer-item ${isActive ? 'active' : ''}" data-cat="${escapeHtml(catName)}">
+                <div class="cat-item-left">
+                    <span class="cat-item-icon">${icon}</span>
+                    <div class="cat-item-info">
+                        <span class="cat-item-name">${escapeHtml(catName)}</span>
+                        <span class="cat-item-count">${count} ${count === 1 ? 'Treat Fresh' : 'Treats Fresh'}</span>
+                    </div>
+                </div>
+                <div class="cat-item-right">
+                    ${isActive ? '<span class="cat-active-pill">Viewing</span>' : '<span class="cat-item-arrow">→</span>'}
+                </div>
+            </button>
+        `;
+    }).join('');
+}
+
+function initFloatingCategoryMenu() {
+    if (categoryMenuDrawerInitialized) return;
+    categoryMenuDrawerInitialized = true;
+
+    const floatingBtn = document.getElementById('floatingMenuBtn');
+    const drawer = document.getElementById('categoryMenuDrawer');
+    const overlay = document.getElementById('categoryMenuOverlay');
+    const closeBtn = document.getElementById('closeCategoryMenuBtn');
+    const filterInput = document.getElementById('categoryFilterInput');
+    const listEl = document.getElementById('categoryDrawerList');
+    const allBtn = document.getElementById('categoryDrawerAllBtn');
+    const studioBtn = document.getElementById('categoryDrawerStudioBtn');
+
+    if (!floatingBtn || !drawer || !overlay) return;
+
+    const openDrawer = () => {
+        updateCategoryDrawerData(filterInput ? filterInput.value : '');
+        overlay.classList.add('open');
+        drawer.classList.add('open');
+        floatingBtn.classList.add('active');
+        floatingBtn.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('category-menu-open');
+    };
+
+    const closeDrawer = () => {
+        overlay.classList.remove('open');
+        drawer.classList.remove('open');
+        floatingBtn.classList.remove('active');
+        floatingBtn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('category-menu-open');
+        if (filterInput) {
+            filterInput.value = '';
+        }
+    };
+
+    floatingBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (drawer.classList.contains('open')) {
+            closeDrawer();
+        } else {
+            openDrawer();
+        }
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    // Filter input search
+    if (filterInput) {
+        filterInput.addEventListener('input', (e) => {
+            updateCategoryDrawerData(e.target.value);
+        });
+    }
+
+    // Category click inside drawer
+    if (listEl) {
+        listEl.addEventListener('click', (e) => {
+            const itemBtn = e.target.closest('.category-drawer-item');
+            if (!itemBtn) return;
+            const catName = itemBtn.getAttribute('data-cat');
+            closeDrawer();
+
+            if (catName) {
+                // Find matching tab button
+                const tabsContainer = document.getElementById('menuTabs');
+                let foundBtn = null;
+                if (tabsContainer) {
+                    const buttons = Array.from(tabsContainer.querySelectorAll('.menu-tab-btn'));
+                    foundBtn = buttons.find(b => b.getAttribute('data-cat') === catName);
+                }
+
+                if (foundBtn) {
+                    foundBtn.click();
+                } else if (currentMenuCategories[catName]) {
+                    renderCategory(currentMenuCategories[catName], catName);
+                }
+
+                // Smooth scroll to menu section
+                const menuSection = document.getElementById('menu');
+                if (menuSection) {
+                    const topOffset = 80;
+                    const elementPosition = menuSection.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    }
+
+    // "View Entire Menu" button
+    if (allBtn) {
+        allBtn.addEventListener('click', () => {
+            closeDrawer();
+            const tabsContainer = document.getElementById('menuTabs');
+            if (tabsContainer && tabsContainer.firstElementChild) {
+                tabsContainer.firstElementChild.click();
+            }
+            const menuSection = document.getElementById('menu');
+            if (menuSection) {
+                const topOffset = 80;
+                const elementPosition = menuSection.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    }
+
+    // "Custom Cake Studio" button
+    if (studioBtn) {
+        studioBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeDrawer();
+            const studioSection = document.getElementById('customize');
+            if (studioSection) {
+                studioSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && drawer.classList.contains('open')) {
+            closeDrawer();
+        }
     });
 }
 
