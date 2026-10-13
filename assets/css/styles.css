@@ -43,6 +43,384 @@
     --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* =========================================================
+   Velvet Midnight Patisserie Theme (Dark Mode)
+   Brand Atmosphere: Deep Warm Cocoa, Candlelit Rose Gold & Smoked Velvet
+   ========================================================= */
+[data-theme="dark"] {
+    --primary-color: #2e1726;        /* deep rich berry plum */
+    --primary-light: #1c1018;        /* velvet dark plum surface */
+    --secondary-color: #3f1d33;      /* deep rose mauve */
+    --accent-color: #f472b6;         /* vivid glowing rose pink */
+    --accent-dark: #fb7185;          /* vibrant coral rose */
+    --accent-deep: #f43f5e;          /* rich jewel rose */
+    --accent-gradient: linear-gradient(135deg, #fb7185 0%, #ec4899 50%, #db2777 100%);
+    --accent-glow: rgba(251, 113, 133, 0.35);
+    
+    /* Neutral & Typography */
+    --text-main: #fdf2f6;            /* Warm milk cream */
+    --text-muted: #d8b4c4;           /* Soft dusty rose taupe */
+    --text-light: #a37c8e;           /* Muted mauve caption */
+    --bg-color: #120b10;             /* Midnight velvet espresso */
+    --card-bg: rgba(26, 16, 22, 0.88);
+    --surface-glass: rgba(34, 19, 29, 0.75);
+    --border-light: rgba(244, 114, 182, 0.18);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --white: #1a0f16;
+    
+    /* Ambient Candlelit Glow Shadows */
+    --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 20px rgba(244, 114, 182, 0.06);
+    --shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.85), 0 0 30px rgba(251, 113, 133, 0.12);
+    --shadow-hover: 0 25px 50px -12px rgba(0, 0, 0, 0.95), 0 0 35px rgba(244, 114, 182, 0.22);
+}
+
+/* Specific Dark Mode Component Adjustments */
+[data-theme="dark"] body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .navbar {
+    background: rgba(18, 11, 16, 0.88);
+    border-bottom: 1px solid rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .cart-btn {
+    background: rgba(34, 19, 29, 0.9);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .cart-btn:hover {
+    background: rgba(48, 25, 41, 0.95);
+    border-color: var(--accent-dark);
+}
+
+[data-theme="dark"] .hero {
+    background: radial-gradient(circle at 80% 20%, rgba(219, 39, 119, 0.14) 0%, transparent 60%),
+                radial-gradient(circle at 15% 85%, rgba(244, 114, 182, 0.08) 0%, transparent 55%),
+                var(--bg-color);
+}
+
+[data-theme="dark"] .hero-tag {
+    background: rgba(36, 20, 30, 0.85);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .hero-cta-group .secondary-outline {
+    background: rgba(36, 20, 30, 0.8);
+    border-color: rgba(244, 114, 182, 0.3);
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .hero-cta-group .secondary-outline:hover {
+    background: rgba(48, 25, 41, 0.95);
+    border-color: var(--accent-color);
+}
+
+[data-theme="dark"] .trust-chip {
+    background: rgba(36, 20, 30, 0.85);
+    border-color: rgba(244, 114, 182, 0.2);
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .floating-trust-badge {
+    background: rgba(26, 15, 22, 0.95);
+    border-color: rgba(244, 114, 182, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(244, 114, 182, 0.08);
+}
+
+[data-theme="dark"] .marquee-strip {
+    background: rgba(28, 16, 24, 0.92);
+    border-top: 1px solid rgba(244, 114, 182, 0.12);
+    border-bottom: 1px solid rgba(244, 114, 182, 0.12);
+}
+
+[data-theme="dark"] .search-input {
+    background: rgba(28, 16, 24, 0.9);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .search-input:focus {
+    background: rgba(36, 20, 30, 1);
+    border-color: var(--accent-color);
+}
+
+[data-theme="dark"] .catalog-status-badge {
+    background: rgba(36, 20, 30, 0.85);
+    border-color: rgba(244, 114, 182, 0.2);
+    color: #d8b4c4;
+}
+
+[data-theme="dark"] .rail-nav-btn {
+    background: rgba(36, 20, 30, 0.92);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .menu-tab-btn {
+    background: rgba(32, 18, 27, 0.85);
+    border-color: rgba(244, 114, 182, 0.2);
+    color: #d8b4c4;
+}
+
+[data-theme="dark"] .menu-tab-btn:hover {
+    background: rgba(48, 25, 40, 0.95);
+    color: #fdf2f6;
+    border-color: #f472b6;
+}
+
+[data-theme="dark"] .product-card {
+    background: rgba(26, 15, 22, 0.92);
+    border-color: rgba(244, 114, 182, 0.18);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .product-card:hover {
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75), 0 0 25px rgba(244, 114, 182, 0.16);
+    border-color: rgba(244, 114, 182, 0.45);
+}
+
+[data-theme="dark"] .card-img-wrapper {
+    background: #1a0f16;
+    border-color: rgba(244, 114, 182, 0.14);
+}
+
+[data-theme="dark"] .card-img-nav {
+    background: rgba(26, 15, 22, 0.92);
+    border-color: rgba(244, 114, 182, 0.35);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .card-category-tag {
+    background: rgba(46, 23, 38, 0.85);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .card-dietary-tag {
+    background: rgba(16, 40, 24, 0.8);
+    color: #4ade80;
+    border-color: rgba(74, 222, 128, 0.3);
+}
+
+[data-theme="dark"] .skeleton-card {
+    background: rgba(26, 15, 22, 0.92);
+    border-color: rgba(244, 114, 182, 0.12);
+}
+
+[data-theme="dark"] .skeleton-shimmer {
+    background: #23141f;
+}
+
+[data-theme="dark"] .skeleton-shimmer::after {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.08) 20%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+[data-theme="dark"] .empty-catalog-state {
+    background: rgba(26, 15, 22, 0.92);
+    border-color: rgba(244, 114, 182, 0.25);
+}
+
+[data-theme="dark"] .customize-section {
+    background: linear-gradient(180deg, #120b10 0%, #190e16 50%, #120b10 100%);
+}
+
+[data-theme="dark"] .custom-cat-tab {
+    background: rgba(32, 18, 27, 0.85);
+    border-color: rgba(244, 114, 182, 0.2);
+    color: #d8b4c4;
+}
+
+[data-theme="dark"] .custom-cat-tab:hover {
+    background: rgba(48, 25, 40, 0.95);
+    border-color: var(--accent-dark);
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .customize-card {
+    background: rgba(24, 14, 20, 0.95);
+    border-color: rgba(244, 114, 182, 0.2);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .upload-badge-pill {
+    background: rgba(46, 23, 38, 0.9);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .custom-dropzone {
+    background: linear-gradient(180deg, rgba(32, 18, 27, 0.85) 0%, rgba(22, 12, 18, 0.85) 100%);
+    border-color: rgba(244, 114, 182, 0.3);
+}
+
+[data-theme="dark"] .custom-dropzone:hover,
+[data-theme="dark"] .custom-dropzone.dragover {
+    background: rgba(40, 22, 34, 0.95);
+    border-color: var(--accent-dark);
+}
+
+[data-theme="dark"] .polaroid-wrapper {
+    background: #1c1017;
+    border-color: rgba(244, 114, 182, 0.25);
+}
+
+[data-theme="dark"] .polaroid-img {
+    background: #23141f;
+}
+
+[data-theme="dark"] .custom-input,
+[data-theme="dark"] .custom-select,
+[data-theme="dark"] .custom-textarea {
+    background: rgba(30, 17, 25, 0.9);
+    border-color: rgba(244, 114, 182, 0.2);
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .custom-input:focus,
+[data-theme="dark"] .custom-select:focus,
+[data-theme="dark"] .custom-textarea:focus {
+    background: rgba(38, 21, 32, 1);
+    border-color: var(--accent-color);
+}
+
+[data-theme="dark"] .custom-select option {
+    background: #1a0f16;
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .reviews-section {
+    background: linear-gradient(135deg, #130c11 0%, #1c1119 50%, #140d12 100%);
+}
+
+[data-theme="dark"] .review-card {
+    background: rgba(26, 15, 22, 0.94);
+    border-color: rgba(244, 114, 182, 0.16);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .review-card:hover {
+    border-color: rgba(244, 114, 182, 0.45);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .reviews-nav-btn {
+    background: rgba(34, 19, 29, 0.92);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .cart-modal {
+    background: #170e14;
+    border-left: 1px solid rgba(244, 114, 182, 0.18);
+}
+
+[data-theme="dark"] .cart-header {
+    background: #20131c;
+    border-bottom: 1px solid rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .cart-item {
+    background: #20131c;
+    border-color: rgba(244, 114, 182, 0.14);
+}
+
+[data-theme="dark"] .cart-subtotal-card {
+    background: #241420;
+    border-color: rgba(244, 114, 182, 0.2);
+}
+
+[data-theme="dark"] .cart-footer {
+    background: #180f15;
+    border-top: 1px solid rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .quickview-dialog {
+    background: #180f15;
+    border-color: rgba(244, 114, 182, 0.25);
+}
+
+[data-theme="dark"] .quickview-close-btn {
+    background: rgba(34, 19, 29, 0.9);
+    border-color: rgba(244, 114, 182, 0.3);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .gallery-main-view {
+    background: #20131c;
+    border-color: rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .qv-nav-btn {
+    background: rgba(34, 19, 29, 0.88);
+    border-color: rgba(244, 114, 182, 0.3);
+    color: #f472b6;
+}
+
+[data-theme="dark"] .qv-thumb-item {
+    background: #20131c;
+}
+
+[data-theme="dark"] .category-menu-drawer {
+    background: rgba(24, 14, 20, 0.98);
+    border-color: rgba(244, 114, 182, 0.2);
+}
+
+[data-theme="dark"] .category-drawer-header {
+    background: linear-gradient(to bottom, #24141e, rgba(24, 14, 20, 0.95));
+    border-bottom: 1px solid rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .category-drawer-close {
+    background: rgba(34, 19, 29, 0.85);
+    border-color: rgba(244, 114, 182, 0.2);
+    color: #d8b4c4;
+}
+
+[data-theme="dark"] .category-drawer-search-wrap {
+    background: rgba(34, 19, 29, 0.85);
+    border-color: rgba(244, 114, 182, 0.2);
+}
+
+[data-theme="dark"] .category-filter-input {
+    background: transparent;
+    color: #fdf2f6;
+}
+
+[data-theme="dark"] .category-drawer-tile {
+    background: rgba(32, 18, 27, 0.85);
+    border-color: rgba(244, 114, 182, 0.15);
+}
+
+[data-theme="dark"] .category-drawer-tile:hover {
+    background: rgba(48, 25, 40, 0.95);
+    border-color: var(--accent-dark);
+}
+
+[data-theme="dark"] .mobile-bottom-nav {
+    background: rgba(18, 11, 16, 0.95);
+    border-top: 1px solid rgba(244, 114, 182, 0.18);
+}
+
+[data-theme="dark"] .scroll-top-btn {
+    background: rgba(34, 19, 29, 0.92);
+    border-color: rgba(244, 114, 182, 0.25);
+    color: #f472b6;
+}
+
+[data-theme="dark"] footer {
+    background: #0d070b;
+}
+
 /* Base Reset */
 *, *::before, *::after {
     margin: 0;
@@ -153,7 +531,92 @@ h1, h2, h3, h4 {
 .nav-actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+}
+
+/* Velvet Midnight Theme Toggle Button */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: #ffffff;
+    border: 1.5px solid var(--primary-color);
+    color: var(--text-main);
+    padding: 0.42rem 0.85rem 0.42rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    user-select: none;
+}
+
+.theme-toggle-btn:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.theme-toggle-track {
+    width: 38px;
+    height: 22px;
+    background: #fce7f3;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    position: relative;
+    transition: background 0.3s ease;
+    pointer-events: none;
+}
+
+.theme-toggle-thumb {
+    width: 18px;
+    height: 18px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(0);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    font-size: 0.72rem;
+    line-height: 1;
+}
+
+.theme-icon.moon-icon {
+    display: none;
+}
+
+.theme-icon.sun-icon {
+    display: inline-block;
+}
+
+[data-theme="dark"] .theme-toggle-track {
+    background: #471d37;
+}
+
+[data-theme="dark"] .theme-toggle-thumb {
+    transform: translateX(16px);
+    background: #180f16;
+}
+
+[data-theme="dark"] .theme-icon.moon-icon {
+    display: inline-block;
+}
+
+[data-theme="dark"] .theme-icon.sun-icon {
+    display: none;
+}
+
+.theme-toggle-label {
+    font-size: 0.84rem;
+    letter-spacing: 0.2px;
+    font-weight: 700;
+    pointer-events: none;
 }
 
 .cart-btn {
@@ -3445,6 +3908,19 @@ body.modal-open {
         padding: 0.65rem 4%;
     }
 
+    .theme-toggle-label {
+        display: none;
+    }
+
+    .theme-toggle-btn {
+        padding: 0.32rem 0.35rem;
+        gap: 0;
+    }
+
+    .nav-actions {
+        gap: 0.45rem;
+    }
+
     .logo img {
         height: 48px;
     }
@@ -3902,6 +4378,53 @@ body.modal-open {
         justify-content: center;
     }
 }
+
+/* =========================================================
+   Toast Notification Styling
+   ========================================================= */
+#toast-container {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+    max-width: 90vw;
+}
+
+.custom-toast {
+    background: rgba(45, 24, 34, 0.94);
+    color: #ffffff;
+    padding: 0.75rem 1.4rem;
+    border-radius: var(--radius-full);
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+    border: 1px solid rgba(244, 114, 182, 0.35);
+    text-align: center;
+}
+
+.custom-toast.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+[data-theme="dark"] .custom-toast {
+    background: rgba(30, 16, 25, 0.96);
+    color: #fdf2f6;
+    border-color: rgba(244, 114, 182, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 20px rgba(244, 114, 182, 0.15);
+}
+
 
 
 

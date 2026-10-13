@@ -756,6 +756,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const animatedElements = document.querySelectorAll('.fade-in, .fade-in-right, .fade-in-up');
     animatedElements.forEach(el => observer.observe(el));
 
+    // Initialize Velvet Midnight Theme Toggle
+    initThemeToggle();
+
     // Initialize Menu, Rail Controls, and Search
     renderMenu();
     initCategoryRailControls();
@@ -773,6 +776,73 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update cart UI from local storage
     updateCartCount();
 });
+
+// =========================================================
+// Velvet Midnight Patisserie Theme Controller
+// =========================================================
+function initThemeToggle() {
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    const toggleLabel = document.getElementById('themeToggleLabel');
+
+    const updateControls = (theme) => {
+        if (toggleLabel) {
+            toggleLabel.textContent = theme === 'dark' ? 'Day' : 'Night';
+        }
+        if (toggleBtn) {
+            const isDark = theme === 'dark';
+            toggleBtn.setAttribute('title', isDark ? 'Switch to Day Blush theme' : 'Switch to Velvet Midnight theme');
+            toggleBtn.setAttribute('aria-label', isDark ? 'Switch to Day Blush theme' : 'Switch to Velvet Midnight theme');
+        }
+    };
+
+    const applyTheme = (theme, notify = false) => {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.body.classList.add('dark-theme');
+            updateControls('dark');
+            if (notify) showToast('🌙 Velvet Midnight Patisserie activated', 'info');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            document.body.classList.remove('dark-theme');
+            updateControls('light');
+            if (notify) showToast('☀️ Day Blush theme restored', 'info');
+        }
+    };
+
+    // Determine current theme
+    let currentTheme = 'light';
+    try {
+        const saved = localStorage.getItem('crustora_theme');
+        if (saved) {
+            currentTheme = saved;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            currentTheme = 'dark';
+        }
+    } catch (e) {}
+
+    applyTheme(currentTheme, false);
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const isCurrentlyDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const nextTheme = isCurrentlyDark ? 'light' : 'dark';
+            try {
+                localStorage.setItem('crustora_theme', nextTheme);
+            } catch (e) {}
+            applyTheme(nextTheme, true);
+        });
+    }
+
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            try {
+                if (!localStorage.getItem('crustora_theme')) {
+                    applyTheme(e.matches ? 'dark' : 'light', false);
+                }
+            } catch (err) {}
+        });
+    }
+}
 
 // =========================================================
 // Interactive Hero Showcase Slider
